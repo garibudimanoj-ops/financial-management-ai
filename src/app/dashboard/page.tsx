@@ -179,25 +179,31 @@ export default async function DashboardPage() {
 
       {/* Operational Quick Nav Modules */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-        <div className="glass-card p-5 text-center opacity-75 hover:opacity-100 transition-opacity">
-          <Package className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
+        <Link
+          href="/products"
+          className="glass-card p-5 text-center hover:bg-white/5 transition-all text-white block group"
+        >
+          <Package className="w-6 h-6 text-indigo-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
           <p className="font-semibold text-white text-sm">Products</p>
-          <span className="text-[11px] text-gray-400">Phase 2 Catalog</span>
-        </div>
+          <span className="text-[11px] text-indigo-300">Catalog & Pricing</span>
+        </Link>
 
-        <div className="glass-card p-5 text-center opacity-75 hover:opacity-100 transition-opacity">
-          <Boxes className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
+        <Link
+          href="/inventory"
+          className="glass-card p-5 text-center hover:bg-white/5 transition-all text-white block group"
+        >
+          <Boxes className="w-6 h-6 text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
           <p className="font-semibold text-white text-sm">Inventory</p>
-          <span className="text-[11px] text-gray-400">Phase 2 Stock Movements</span>
-        </div>
+          <span className="text-[11px] text-emerald-300">Stock & Movements</span>
+        </Link>
 
-        <div className="glass-card p-5 text-center opacity-75 hover:opacity-100 transition-opacity">
+        <div className="glass-card p-5 text-center opacity-60">
           <Receipt className="w-6 h-6 text-amber-400 mx-auto mb-2" />
           <p className="font-semibold text-white text-sm">Sales & Invoices</p>
           <span className="text-[11px] text-gray-400">Phase 3 POS & Billing</span>
         </div>
 
-        <div className="glass-card p-5 text-center opacity-75 hover:opacity-100 transition-opacity">
+        <div className="glass-card p-5 text-center opacity-60">
           <Sparkles className="w-6 h-6 text-purple-400 mx-auto mb-2" />
           <p className="font-semibold text-white text-sm">AI CA Insights</p>
           <span className="text-[11px] text-gray-400">Phase 7 Read-Only</span>

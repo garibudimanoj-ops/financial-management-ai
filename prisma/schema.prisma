@@ -19,16 +19,26 @@ enum InvitationStatus {
   EXPIRED
 }
 
+enum MovementType {
+  STOCK_IN
+  SALE
+  RETURN
+  ADJUSTMENT
+  DAMAGE
+}
+
 model User {
-  id             String               @id @default(cuid())
-  supabaseUserId String               @unique
-  email          String               @unique
-  name           String?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  memberships    BusinessMember[]
-  invitations    BusinessInvitation[]
-  auditLogs      AuditLog[]
+  id                 String               @id @default(cuid())
+  supabaseUserId     String               @unique
+  email              String               @unique
+  name               String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  memberships        BusinessMember[]
+  invitations        BusinessInvitation[]
+  auditLogs          AuditLog[]
+  createdProducts    Product[]            @relation("ProductCreatedBy")
+  inventoryMovements InventoryMovement[] @relation("MovementCreatedBy")
 }
 
 model Business {
@@ -48,6 +58,9 @@ model Business {
   members               BusinessMember[]
   invitations           BusinessInvitation[]
   auditLogs             AuditLog[]
+  products              Product[]
+  batches               InventoryBatch[]
+  inventoryMovements    InventoryMovement[]
 }
 
 model BusinessMember {
@@ -104,3 +117,84 @@ model AuditLog {
   @@index([createdAt])
 }
 
+model Product {
+  id                String              @id @default(cuid())
+  businessId        String
+  name              String
+  description       String?
+  SKU               String
+  barcode           String?
+  category          String?
+  unit              String              @default("PCS")
+  costPrice         Decimal             @default(0) @db.Decimal(15, 2)
+  sellingPrice      Decimal             @default(0) @db.Decimal(15, 2)
+  stockQuantity     Decimal             @default(0) @db.Decimal(15, 4)
+  lowStockThreshold Decimal             @default(10) @db.Decimal(15, 4)
+  taxCategory       String              @default("STANDARD")
+  archived          Boolean             @default(false)
+  createdById       String?
+  updatedById       String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  business          Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy         User?               @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  batches           InventoryBatch[]
+  movements         InventoryMovement[]
+
+  @@unique([businessId, SKU])
+  @@unique([businessId, barcode])
+  @@index([businessId])
+  @@index([businessId, archived])
+  @@index([businessId, name])
+  @@index([SKU])
+  @@index([barcode])
+}
+
+model InventoryBatch {
+  id                String              @id @default(cuid())
+  businessId        String
+  productId         String
+  batchNumber       String
+  quantity          Decimal             @db.Decimal(15, 4)
+  remainingQuantity Decimal             @db.Decimal(15, 4)
+  unitCost          Decimal             @db.Decimal(15, 2)
+  receivedDate      DateTime            @default(now())
+  expiryDate        DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  business          Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product           Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  movements         InventoryMovement[]
+
+  @@index([businessId])
+  @@index([productId])
+  @@index([businessId, batchNumber])
+}
+
+model InventoryMovement {
+  id                String              @id @default(cuid())
+  businessId        String
+  productId         String
+  batchId           String?
+  movementType      MovementType
+  quantity          Decimal             @db.Decimal(15, 4)
+  unitCost          Decimal?            @db.Decimal(15, 2)
+  previousStock     Decimal             @db.Decimal(15, 4)
+  resultingStock    Decimal             @db.Decimal(15, 4)
+  reason            String?
+  reference         String?
+  createdById       String?
+  createdAt         DateTime            @default(now())
+
+  business          Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product           Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  batch             InventoryBatch?     @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  createdBy         User?               @relation("MovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([productId])
+  @@index([businessId, createdAt])
+  @@index([businessId, movementType])
+}
