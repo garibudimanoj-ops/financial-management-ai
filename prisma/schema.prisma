@@ -27,22 +27,52 @@ enum MovementType {
   DAMAGE
 }
 
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  BANK_TRANSFER
+  OTHER
+}
+
+enum LedgerEntryType {
+  INVOICE
+  PAYMENT
+  REFUND
+  CREDIT
+  DEBIT
+  OPENING_BALANCE
+  ADJUSTMENT
+}
+
 model User {
-  id                 String               @id @default(cuid())
-  supabaseUserId     String               @unique
-  email              String               @unique
+  id                 String                @id @default(cuid())
+  supabaseUserId     String                @unique
+  email              String                @unique
   name               String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
   memberships        BusinessMember[]
   invitations        BusinessInvitation[]
   auditLogs          AuditLog[]
-  createdProducts    Product[]            @relation("ProductCreatedBy")
-  inventoryMovements InventoryMovement[] @relation("MovementCreatedBy")
+  createdProducts    Product[]             @relation("ProductCreatedBy")
+  inventoryMovements InventoryMovement[]  @relation("MovementCreatedBy")
+  createdInvoices    Invoice[]             @relation("InvoiceCreatedBy")
+  createdPayments    Payment[]             @relation("PaymentCreatedBy")
+  createdLedgerEntries CustomerLedgerEntry[] @relation("LedgerCreatedBy")
 }
 
 model Business {
-  id                    String               @id @default(cuid())
+  id                    String                @id @default(cuid())
   name                  String
   accountType           String
   businessType          String
@@ -51,16 +81,21 @@ model Business {
   city                  String
   baseCurrency          String
   fiscalYearStart       String
-  taxRegistrationStatus Boolean              @default(false)
+  taxRegistrationStatus Boolean               @default(false)
   taxId                 String?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
   members               BusinessMember[]
   invitations           BusinessInvitation[]
   auditLogs             AuditLog[]
   products              Product[]
   batches               InventoryBatch[]
   inventoryMovements    InventoryMovement[]
+  customers             Customer[]
+  invoices              Invoice[]
+  payments              Payment[]
+  ledgerEntries         CustomerLedgerEntry[]
+  invoiceSequence       InvoiceSequence?
 }
 
 model BusinessMember {
@@ -141,6 +176,7 @@ model Product {
   createdBy         User?               @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   batches           InventoryBatch[]
   movements         InventoryMovement[]
+  invoiceItems      InvoiceItem[]
 
   @@unique([businessId, SKU])
   @@unique([businessId, barcode])
@@ -197,4 +233,155 @@ model InventoryMovement {
   @@index([productId])
   @@index([businessId, createdAt])
   @@index([businessId, movementType])
+}
+
+model Customer {
+  id             String                @id @default(cuid())
+  businessId     String
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  city           String?
+  state          String?
+  postalCode     String?
+  country        String?               @default("India")
+  taxId          String?               // GSTIN / Tax ID
+  notes          String?
+  creditLimit    Decimal?              @db.Decimal(15, 2)
+  openingBalance Decimal               @default(0) @db.Decimal(15, 2)
+  currentBalance Decimal               @default(0) @db.Decimal(15, 2)
+  archived       Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  business       Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invoices       Invoice[]
+  payments       Payment[]
+  ledgerEntries  CustomerLedgerEntry[]
+
+  @@index([businessId])
+  @@index([businessId, name])
+  @@index([businessId, phone])
+  @@index([businessId, archived])
+}
+
+model CustomerLedgerEntry {
+  id           String          @id @default(cuid())
+  businessId   String
+  customerId   String
+  invoiceId    String?
+  paymentId    String?
+  entryType    LedgerEntryType
+  amount       Decimal         @db.Decimal(15, 2)
+  balanceAfter Decimal         @db.Decimal(15, 2)
+  description  String?
+  reference    String?
+  createdById  String?
+  createdAt    DateTime        @default(now())
+
+  business     Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer     Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  invoice      Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  payment      Payment?        @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdBy    User?           @relation("LedgerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([customerId])
+  @@index([businessId, createdAt])
+}
+
+model InvoiceSequence {
+  id            String   @id @default(cuid())
+  businessId    String   @unique
+  prefix        String   @default("INV")
+  currentNumber Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id             String                @id @default(cuid())
+  businessId     String
+  customerId     String?
+  invoiceNumber  String
+  status         InvoiceStatus         @default(DRAFT)
+  issueDate      DateTime              @default(now())
+  dueDate        DateTime?
+  subtotal       Decimal               @default(0) @db.Decimal(15, 2)
+  discountAmount Decimal               @default(0) @db.Decimal(15, 2)
+  taxAmount      Decimal               @default(0) @db.Decimal(15, 2)
+  totalAmount    Decimal               @default(0) @db.Decimal(15, 2)
+  paidAmount     Decimal               @default(0) @db.Decimal(15, 2)
+  balanceDue     Decimal               @default(0) @db.Decimal(15, 2)
+  notes          String?
+  idempotencyKey String?
+  createdById    String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  business       Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer       Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items          InvoiceItem[]
+  payments       Payment[]
+  ledgerEntries  CustomerLedgerEntry[]
+  createdBy      User?                 @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, invoiceNumber])
+  @@unique([businessId, idempotencyKey])
+  @@index([businessId])
+  @@index([customerId])
+  @@index([businessId, status])
+  @@index([businessId, issueDate])
+}
+
+model InvoiceItem {
+  id                  String   @id @default(cuid())
+  invoiceId           String
+  productId           String?
+  productNameSnapshot String
+  skuSnapshot         String
+  unitSnapshot        String   @default("PCS")
+  quantity            Decimal  @db.Decimal(15, 4)
+  unitPrice           Decimal  @db.Decimal(15, 2)
+  unitCostSnapshot    Decimal  @default(0) @db.Decimal(15, 2)
+  discount            Decimal  @default(0) @db.Decimal(15, 2)
+  taxRate             Decimal  @default(0) @db.Decimal(5, 2)
+  taxAmount           Decimal  @default(0) @db.Decimal(15, 2)
+  lineSubtotal        Decimal  @db.Decimal(15, 2)
+  lineTotal           Decimal  @db.Decimal(15, 2)
+
+  invoice             Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product             Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model Payment {
+  id             String                @id @default(cuid())
+  businessId     String
+  invoiceId      String?
+  customerId     String?
+  amount         Decimal               @db.Decimal(15, 2)
+  paymentMethod  PaymentMethod         @default(CASH)
+  reference      String?
+  notes          String?
+  idempotencyKey String?
+  receivedAt     DateTime              @default(now())
+  createdById    String?
+  createdAt      DateTime              @default(now())
+
+  business       Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invoice        Invoice?              @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  customer       Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  ledgerEntries  CustomerLedgerEntry[]
+  createdBy      User?                 @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, idempotencyKey])
+  @@index([businessId])
+  @@index([invoiceId])
+  @@index([customerId])
+  @@index([businessId, createdAt])
 }
