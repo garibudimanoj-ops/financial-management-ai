@@ -1,0 +1,106 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model User {
+  id             String               @id @default(cuid())
+  supabaseUserId String               @unique
+  email          String               @unique
+  name           String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  memberships    BusinessMember[]
+  invitations    BusinessInvitation[]
+  auditLogs      AuditLog[]
+}
+
+model Business {
+  id                    String               @id @default(cuid())
+  name                  String
+  accountType           String
+  businessType          String
+  country               String
+  state                 String
+  city                  String
+  baseCurrency          String
+  fiscalYearStart       String
+  taxRegistrationStatus Boolean              @default(false)
+  taxId                 String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  members               BusinessMember[]
+  invitations           BusinessInvitation[]
+  auditLogs             AuditLog[]
+}
+
+model BusinessMember {
+  id         String   @id @default(cuid())
+  businessId String
+  userId     String
+  role       Role     @default(STAFF)
+  status     String   @default("ACTIVE") // ACTIVE, REMOVED, SUSPENDED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
+}
+
+model BusinessInvitation {
+  id           String           @id @default(cuid())
+  businessId   String
+  email        String
+  role         Role             @default(STAFF)
+  status       InvitationStatus @default(PENDING)
+  invitedById  String
+  invitedUserId String?
+  expiresAt    DateTime
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  business     Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invitedBy    User             @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, email])
+  @@index([businessId])
+  @@index([email])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  businessId String?
+  userId     String?
+  action     String
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
