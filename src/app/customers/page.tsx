@@ -1,6 +1,7 @@
 import { requireBusinessContext } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
+import { serializeCustomer } from '@/lib/serialize';
 import CustomerList from '@/components/customers/CustomerList';
 import Link from 'next/link';
 import { Users, ArrowLeft, Plus } from 'lucide-react';
@@ -22,19 +23,7 @@ export default async function CustomersPage() {
 
   const currency = business?.baseCurrency || 'INR';
 
-  const formattedCustomers = customers.map((c) => ({
-    id: c.id,
-    name: c.name,
-    email: c.email,
-    phone: c.phone,
-    city: c.city,
-    state: c.state,
-    taxId: c.taxId,
-    currentBalance: c.currentBalance.toString(),
-    creditLimit: c.creditLimit ? c.creditLimit.toString() : null,
-    archived: c.archived,
-    createdAt: c.createdAt,
-  }));
+  const formattedCustomers = customers.map(serializeCustomer);
 
   return (
     <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">

@@ -13,10 +13,10 @@ interface ProductItem {
   barcode: string | null;
   category: string | null;
   unit: string;
-  costPrice: string | number;
-  sellingPrice: string | number;
-  stockQuantity: string | number;
-  lowStockThreshold: string | number;
+  costPrice: string | number | null;
+  sellingPrice: string | number | null;
+  stockQuantity: string | number | null;
+  lowStockThreshold: string | number | null;
   taxCategory: string;
   archived: boolean;
   createdAt: string | Date;

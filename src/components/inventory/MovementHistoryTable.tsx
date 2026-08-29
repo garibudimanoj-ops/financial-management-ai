@@ -4,10 +4,10 @@ import Link from 'next/link';
 interface MovementRecord {
   id: string;
   movementType: MovementType;
-  quantity: string | number;
+  quantity: string | number | null;
   unitCost: string | number | null;
-  previousStock: string | number;
-  resultingStock: string | number;
+  previousStock: string | number | null;
+  resultingStock: string | number | null;
   reason: string | null;
   reference: string | null;
   createdAt: string | Date;
@@ -16,7 +16,7 @@ interface MovementRecord {
     name: string;
     SKU: string;
     unit: string;
-  };
+  } | null;
   createdBy?: {
     id: string;
     email: string;

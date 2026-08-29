@@ -3,6 +3,7 @@ import { AppError } from '@/lib/errors';
 import { logAuditEvent } from '@/lib/audit';
 import { calculateWeightedAverageCost, toDecimal, DecimalLike } from './valuation';
 import { MovementType, Prisma } from '@prisma/client';
+import { serializeInventoryMovement } from '@/lib/serialize';
 
 export interface AddStockInput {
   businessId: string;
@@ -273,7 +274,7 @@ export async function getInventorySummary(businessId: string) {
     totalUnits,
     totalValuation,
     lowStockCount,
-    recentMovements,
+    recentMovements: recentMovements.map(serializeInventoryMovement),
   };
 }
 
@@ -304,5 +305,5 @@ export async function getInventoryMovements(businessId: string, productId?: stri
     }),
   ]);
 
-  return { total, movements };
+  return { total, movements: movements.map(serializeInventoryMovement) as any[] };
 }

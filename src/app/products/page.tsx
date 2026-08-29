@@ -1,6 +1,7 @@
 import { requireBusinessContext } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
+import { serializeProduct } from '@/lib/serialize';
 import ProductList from '@/components/products/ProductList';
 import Link from 'next/link';
 import { Package, Boxes, ArrowLeft } from 'lucide-react';
@@ -22,23 +23,7 @@ export default async function ProductsPage() {
 
   const currency = business?.baseCurrency || 'INR';
 
-  // Format Decimal values for client components
-  const formattedProducts = products.map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description,
-    SKU: p.SKU,
-    barcode: p.barcode,
-    category: p.category,
-    unit: p.unit,
-    costPrice: p.costPrice.toString(),
-    sellingPrice: p.sellingPrice.toString(),
-    stockQuantity: p.stockQuantity.toString(),
-    lowStockThreshold: p.lowStockThreshold.toString(),
-    taxCategory: p.taxCategory,
-    archived: p.archived,
-    createdAt: p.createdAt,
-  }));
+  const formattedProducts = products.map(serializeProduct);
 
   return (
     <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">

@@ -4,8 +4,8 @@ import Link from 'next/link';
 interface LedgerRecord {
   id: string;
   entryType: LedgerEntryType;
-  amount: string | number;
-  balanceAfter: string | number;
+  amount: string | number | null;
+  balanceAfter: string | number | null;
   description: string | null;
   reference: string | null;
   invoiceId: string | null;

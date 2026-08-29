@@ -8,8 +8,8 @@ interface ProductOption {
   id: string;
   name: string;
   SKU: string;
-  costPrice: string | number;
-  stockQuantity: string | number;
+  costPrice: string | number | null;
+  stockQuantity: string | number | null;
   unit: string;
 }
 

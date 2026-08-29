@@ -1,6 +1,7 @@
 import { requireBusinessContext } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
+import { serializeBusiness } from '@/lib/serialize';
 import SettingsForm from '@/components/SettingsForm';
 import Link from 'next/link';
 import { ArrowLeft, Building2 } from 'lucide-react';
@@ -16,6 +17,8 @@ export default async function SettingsPage() {
   if (!business) {
     return null;
   }
+
+  const serializedBusiness = serializeBusiness(business);
 
   return (
     <div className="min-h-screen p-6 max-w-4xl mx-auto space-y-8">
@@ -39,7 +42,7 @@ export default async function SettingsPage() {
       </div>
 
       <div className="glass-card p-6 md:p-8">
-        <SettingsForm business={business} canEdit={canEdit} />
+        <SettingsForm business={serializedBusiness} canEdit={canEdit} />
       </div>
     </div>
   );

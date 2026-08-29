@@ -2,6 +2,7 @@ import { requireBusinessContext } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { getInventorySummary } from '@/lib/inventory/service';
+import { serializeProduct } from '@/lib/serialize';
 import StockInDialog from '@/components/inventory/StockInDialog';
 import StockAdjustmentDialog from '@/components/inventory/StockAdjustmentDialog';
 import MovementHistoryTable from '@/components/inventory/MovementHistoryTable';
@@ -232,19 +233,7 @@ export default async function InventoryPage() {
         </div>
 
         <MovementHistoryTable
-          movements={summary.recentMovements.map((m) => ({
-            id: m.id,
-            movementType: m.movementType,
-            quantity: m.quantity.toString(),
-            unitCost: m.unitCost ? m.unitCost.toString() : null,
-            previousStock: m.previousStock.toString(),
-            resultingStock: m.resultingStock.toString(),
-            reason: m.reason,
-            reference: m.reference,
-            createdAt: m.createdAt,
-            product: m.product,
-            createdBy: m.createdBy,
-          }))}
+          movements={summary.recentMovements}
           currency={currency}
         />
       </div>

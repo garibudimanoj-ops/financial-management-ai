@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { User, Role } from '@prisma/client';
 import { Permission, hasPermission } from './permissions';
+export { hasPermission } from './permissions';
+export type { Permission } from './permissions';
 import { AppError } from './errors';
 import { cookies } from 'next/headers';
 

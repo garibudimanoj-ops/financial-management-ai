@@ -1,6 +1,7 @@
 import { requireBusinessContext } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getInventoryMovements } from '@/lib/inventory/service';
+import { serializeInventoryMovement } from '@/lib/serialize';
 import MovementHistoryTable from '@/components/inventory/MovementHistoryTable';
 import Link from 'next/link';
 import { History, ArrowLeft, Boxes, Package } from 'lucide-react';
@@ -53,19 +54,7 @@ export default async function InventoryMovementsPage() {
 
       {/* Movements Table */}
       <MovementHistoryTable
-        movements={movements.map((m) => ({
-          id: m.id,
-          movementType: m.movementType,
-          quantity: m.quantity.toString(),
-          unitCost: m.unitCost ? m.unitCost.toString() : null,
-          previousStock: m.previousStock.toString(),
-          resultingStock: m.resultingStock.toString(),
-          reason: m.reason,
-          reference: m.reference,
-          createdAt: m.createdAt,
-          product: m.product,
-          createdBy: m.createdBy,
-        }))}
+        movements={movements.map(serializeInventoryMovement)}
         currency={currency}
       />
     </div>

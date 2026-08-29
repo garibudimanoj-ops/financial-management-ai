@@ -24,7 +24,7 @@ export interface CustomerItem {
   city: string | null;
   state: string | null;
   taxId: string | null;
-  currentBalance: string | number;
+  currentBalance: string | number | null;
   creditLimit: string | number | null;
   archived: boolean;
   createdAt: string | Date;

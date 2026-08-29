@@ -1,6 +1,7 @@
 import { requireBusinessContext } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
+import { serializeInventoryMovement } from '@/lib/serialize';
 import StockInDialog from '@/components/inventory/StockInDialog';
 import StockAdjustmentDialog from '@/components/inventory/StockAdjustmentDialog';
 import MovementHistoryTable from '@/components/inventory/MovementHistoryTable';
@@ -79,6 +80,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       unit: product.unit,
     },
   ];
+
+  const serializedMovements = product.movements.map(serializeInventoryMovement);
 
   return (
     <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
@@ -232,18 +235,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         </div>
 
         <MovementHistoryTable
-          movements={product.movements.map((m) => ({
-            id: m.id,
-            movementType: m.movementType,
-            quantity: m.quantity.toString(),
-            unitCost: m.unitCost ? m.unitCost.toString() : null,
-            previousStock: m.previousStock.toString(),
-            resultingStock: m.resultingStock.toString(),
-            reason: m.reason,
-            reference: m.reference,
-            createdAt: m.createdAt,
-            createdBy: m.createdBy,
-          }))}
+          movements={serializedMovements}
           currency={currency}
           hideProductColumn
         />
