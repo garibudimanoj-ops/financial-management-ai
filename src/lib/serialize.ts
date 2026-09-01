@@ -8,6 +8,7 @@ import {
   CustomerLedgerEntry,
   InventoryBatch,
   Business,
+  Prisma,
 } from '@prisma/client';
 
 export function serializeDecimal(value: any): string | null {
@@ -16,6 +17,74 @@ export function serializeDecimal(value: any): string | null {
     return (value as any).toJSON();
   }
   return String(value);
+}
+
+export function serializeDate(value: Date | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
+export interface ProductSummary {
+  id: string;
+  name: string;
+  SKU: string;
+  unit: string;
+}
+
+export function serializeProductSummary(p: ProductSummary | null | undefined): ProductSummary | null {
+  if (!p) return null;
+  return {
+    id: p.id,
+    name: p.name,
+    SKU: p.SKU,
+    unit: p.unit,
+  };
+}
+
+export interface UserSummary {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
+export function serializeUserSummary(u: UserSummary | null | undefined): UserSummary | null {
+  if (!u) return null;
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name,
+  };
+}
+
+export interface CustomerSummary {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+}
+
+export function serializeCustomerSummary(c: CustomerSummary | null | undefined): CustomerSummary | null {
+  if (!c) return null;
+  return {
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    phone: c.phone,
+  };
+}
+
+export interface InvoiceSummary {
+  id: string;
+  invoiceNumber: string;
+}
+
+export function serializeInvoiceSummary(i: InvoiceSummary | null | undefined): InvoiceSummary | null {
+  if (!i) return null;
+  return {
+    id: i.id,
+    invoiceNumber: i.invoiceNumber,
+  };
 }
 
 export function serializeProduct(product: Product) {
@@ -36,14 +105,15 @@ export function serializeProduct(product: Product) {
     archived: product.archived,
     createdById: product.createdById,
     updatedById: product.updatedById,
-    createdAt: product.createdAt.toISOString(),
-    updatedAt: product.updatedAt.toISOString(),
+    createdAt: serializeDate(product.createdAt),
+    updatedAt: serializeDate(product.updatedAt),
   };
 }
 
 export function serializeInventoryMovement(movement: InventoryMovement & {
   product?: { id: string; name: string; SKU: string; unit: string } | null;
   createdBy?: { id: string; email: string; name: string | null } | null;
+  batch?: { id: string; batchNumber: string } | null;
 }) {
   return {
     id: movement.id,
@@ -58,15 +128,15 @@ export function serializeInventoryMovement(movement: InventoryMovement & {
     reason: movement.reason,
     reference: movement.reference,
     createdById: movement.createdById,
-    createdAt: movement.createdAt.toISOString(),
-    product: movement.product,
-    createdBy: movement.createdBy,
+    createdAt: serializeDate(movement.createdAt),
+    product: serializeProductSummary(movement.product),
+    createdBy: serializeUserSummary(movement.createdBy),
   };
 }
 
 export function serializeInvoice(invoice: Invoice & {
   items?: InvoiceItem[];
-  customer?: { id: string; name: string; email: string | null } | null;
+  customer?: { id: string; name: string; email: string | null; phone?: string | null } | null;
   payments?: Payment[];
   createdBy?: { id: string; email: string; name: string | null } | null;
 }) {
@@ -76,8 +146,8 @@ export function serializeInvoice(invoice: Invoice & {
     customerId: invoice.customerId,
     invoiceNumber: invoice.invoiceNumber,
     status: invoice.status,
-    issueDate: invoice.issueDate.toISOString(),
-    dueDate: invoice.dueDate?.toISOString() || null,
+    issueDate: serializeDate(invoice.issueDate),
+    dueDate: serializeDate(invoice.dueDate),
     subtotal: serializeDecimal(invoice.subtotal as any),
     discountAmount: serializeDecimal(invoice.discountAmount as any),
     taxAmount: serializeDecimal(invoice.taxAmount as any),
@@ -87,12 +157,27 @@ export function serializeInvoice(invoice: Invoice & {
     notes: invoice.notes,
     idempotencyKey: invoice.idempotencyKey,
     createdById: invoice.createdById,
-    createdAt: invoice.createdAt.toISOString(),
-    updatedAt: invoice.updatedAt.toISOString(),
+    createdAt: serializeDate(invoice.createdAt),
+    updatedAt: serializeDate(invoice.updatedAt),
     items: (invoice.items || []).map(serializeInvoiceItem),
-    customer: invoice.customer || null,
-    payments: (invoice.payments || []).map(serializePayment),
-    createdBy: invoice.createdBy || null,
+    customer: invoice.customer
+      ? {
+          id: invoice.customer.id,
+          name: invoice.customer.name,
+          email: invoice.customer.email,
+          phone: invoice.customer.phone ?? null,
+        }
+      : null,
+    payments: (invoice.payments || []).map((p) => ({
+      ...serializePayment(p),
+      customer: p.customerId
+        ? { id: p.customerId, name: '', email: null, phone: null }
+        : null,
+      invoice: p.invoiceId
+        ? { id: p.invoiceId, invoiceNumber: '' }
+        : null,
+    })),
+    createdBy: serializeUserSummary(invoice.createdBy),
   };
 }
 
@@ -126,9 +211,26 @@ export function serializePayment(payment: Payment) {
     reference: payment.reference,
     notes: payment.notes,
     idempotencyKey: payment.idempotencyKey,
-    receivedAt: payment.receivedAt.toISOString(),
+    receivedAt: serializeDate(payment.receivedAt),
     createdById: payment.createdById,
-    createdAt: payment.createdAt.toISOString(),
+    createdAt: serializeDate(payment.createdAt),
+  };
+}
+
+export function serializePaymentWithRelations(payment: Payment & {
+  customer?: { id: string; name: string } | null;
+  invoice?: { id: string; invoiceNumber: string } | null;
+  createdBy?: { id: string; email: string; name: string | null } | null;
+}) {
+  return {
+    ...serializePayment(payment),
+    customer: payment.customer
+      ? { id: payment.customer.id, name: payment.customer.name }
+      : null,
+    invoice: payment.invoice
+      ? { id: payment.invoice.id, invoiceNumber: payment.invoice.invoiceNumber }
+      : null,
+    createdBy: serializeUserSummary(payment.createdBy),
   };
 }
 
@@ -150,13 +252,15 @@ export function serializeCustomer(customer: Customer) {
     openingBalance: serializeDecimal(customer.openingBalance as any),
     currentBalance: serializeDecimal(customer.currentBalance as any),
     archived: customer.archived,
-    createdAt: customer.createdAt.toISOString(),
-    updatedAt: customer.updatedAt.toISOString(),
+    createdAt: serializeDate(customer.createdAt),
+    updatedAt: serializeDate(customer.updatedAt),
   };
 }
 
 export function serializeCustomerLedgerEntry(entry: CustomerLedgerEntry & {
   createdBy?: { id: string; email: string; name: string | null } | null;
+  invoice?: { id: string; invoiceNumber: string } | null;
+  payment?: { id: string } | null;
 }) {
   return {
     id: entry.id,
@@ -170,8 +274,12 @@ export function serializeCustomerLedgerEntry(entry: CustomerLedgerEntry & {
     description: entry.description,
     reference: entry.reference,
     createdById: entry.createdById,
-    createdAt: entry.createdAt.toISOString(),
-    createdBy: entry.createdBy,
+    createdAt: serializeDate(entry.createdAt),
+    createdBy: serializeUserSummary(entry.createdBy),
+    invoice: entry.invoice
+      ? { id: entry.invoice.id, invoiceNumber: entry.invoice.invoiceNumber }
+      : null,
+    payment: entry.payment ? { id: entry.payment.id } : null,
   };
 }
 
@@ -184,10 +292,10 @@ export function serializeInventoryBatch(batch: InventoryBatch) {
     quantity: serializeDecimal(batch.quantity as any),
     remainingQuantity: serializeDecimal(batch.remainingQuantity as any),
     unitCost: serializeDecimal(batch.unitCost as any),
-    receivedDate: batch.receivedDate.toISOString(),
-    expiryDate: batch.expiryDate?.toISOString() || null,
-    createdAt: batch.createdAt.toISOString(),
-    updatedAt: batch.updatedAt.toISOString(),
+    receivedDate: serializeDate(batch.receivedDate),
+    expiryDate: serializeDate(batch.expiryDate),
+    createdAt: serializeDate(batch.createdAt),
+    updatedAt: serializeDate(batch.updatedAt),
   };
 }
 
@@ -204,7 +312,89 @@ export function serializeBusiness(business: Business) {
     fiscalYearStart: business.fiscalYearStart,
     taxRegistrationStatus: business.taxRegistrationStatus,
     taxId: business.taxId,
-    createdAt: business.createdAt.toISOString(),
-    updatedAt: business.updatedAt.toISOString(),
+    createdAt: serializeDate(business.createdAt),
+    updatedAt: serializeDate(business.updatedAt),
+  };
+}
+
+export interface AuditLogSummary {
+  id: string;
+  businessId: string | null;
+  userId: string | null;
+  action: string;
+  details: any;
+  ipAddress: string | null;
+  createdAt: string | null;
+  user?: { id: string; email: string; name: string | null } | null;
+}
+
+export function serializeAuditLog(log: any): AuditLogSummary {
+  return {
+    id: log.id,
+    businessId: log.businessId,
+    userId: log.userId,
+    action: log.action,
+    details: log.details ?? null,
+    ipAddress: log.ipAddress,
+    createdAt: serializeDate(log.createdAt),
+    user: log.user
+      ? { id: log.user.id, email: log.user.email, name: log.user.name }
+      : null,
+  };
+}
+
+export interface MemberSummary {
+  id: string;
+  businessId: string;
+  userId: string;
+  role: string;
+  status: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  user: { id: string; email: string; name: string | null };
+}
+
+export function serializeMember(member: any): MemberSummary {
+  return {
+    id: member.id,
+    businessId: member.businessId,
+    userId: member.userId,
+    role: member.role,
+    status: member.status,
+    createdAt: serializeDate(member.createdAt),
+    updatedAt: serializeDate(member.updatedAt),
+    user: {
+      id: member.user.id,
+      email: member.user.email,
+      name: member.user.name,
+    },
+  };
+}
+
+export interface InvitationSummary {
+  id: string;
+  businessId: string;
+  email: string;
+  role: string;
+  status: string;
+  invitedById: string;
+  invitedUserId: string | null;
+  expiresAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export function serializeInvitation(inv: any): InvitationSummary {
+  return {
+    id: inv.id,
+    businessId: inv.businessId,
+    email: inv.email,
+    role: inv.role,
+    status: inv.status,
+    invitedById: inv.invitedById,
+    invitedUserId: inv.invitedUserId,
+    expiresAt: serializeDate(inv.expiresAt),
+    createdAt: serializeDate(inv.createdAt),
+    updatedAt: serializeDate(inv.updatedAt),
   };
 }

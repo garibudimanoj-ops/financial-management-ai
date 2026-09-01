@@ -100,11 +100,11 @@ export default async function ReportsPage() {
 
   const reports = [
     { title: 'Sales Report', desc: 'Revenue trends, top products, and sales metrics', href: '#', icon: TrendingUp, color: 'text-indigo-400' },
-    { title: 'Invoice Report', desc: 'Invoice status breakdown and totals', href: '#', icon: FileText, color: 'text-amber-400' },
-    { title: 'Payment Report', desc: 'Payment methods, dates, and reconciliation', href: '#', icon: CreditCard, color: 'text-emerald-400' },
-    { title: 'Customer Ledger', desc: 'Outstanding receivables and payment history', href: '#', icon: Users, color: 'text-purple-400' },
-    { title: 'Inventory Report', desc: 'Stock levels, valuation, and movement', href: '#', icon: Boxes, color: 'text-teal-400' },
-    { title: 'Product Report', desc: 'Product performance and catalog analysis', href: '#', icon: Package, color: 'text-pink-400' },
+    { title: 'Invoice Report', desc: 'Invoice status breakdown and totals', href: '/api/reports/export?type=invoices', icon: FileText, color: 'text-amber-400' },
+    { title: 'Payment Report', desc: 'Payment methods, dates, and reconciliation', href: '/api/reports/export?type=payments', icon: CreditCard, color: 'text-emerald-400' },
+    { title: 'Customer Ledger', desc: 'Outstanding receivables and payment history', href: '/api/reports/export?type=customers', icon: Users, color: 'text-purple-400' },
+    { title: 'Inventory Report', desc: 'Stock levels, valuation, and movement', href: '/inventory', icon: Boxes, color: 'text-teal-400' },
+    { title: 'Product Report', desc: 'Product performance and catalog analysis', href: '/api/reports/export?type=products', icon: Package, color: 'text-pink-400' },
     { title: 'Audit Log Report', desc: 'Compliance and activity tracking', href: '/audit-logs', icon: BarChart3, color: 'text-gray-400' },
   ];
 

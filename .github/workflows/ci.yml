@@ -1,0 +1,45 @@
+name: CA Co-Pilot CI
+
+on:
+  push:
+    branches: [ main, feature/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test?schema=public"
+
+      - name: Run Preflight Check
+        run: npm run preflight
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test?schema=public"
+
+      - name: Run Vitest Unit Tests
+        run: npm test
+
+      - name: Build Next.js Application
+        run: npm run build
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test?schema=public"
+          NEXTAUTH_SECRET: "ci-secret-jwt-key-32-characters-long"
+          NEXT_PUBLIC_SUPABASE_URL: "https://mock.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "mock-anon-key"
