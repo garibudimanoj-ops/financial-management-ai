@@ -11,6 +11,9 @@ import {
   Prisma,
 } from '@prisma/client';
 
+export function serializeDecimal(value: null | undefined): null;
+export function serializeDecimal(value: Prisma.Decimal | number | string): string;
+export function serializeDecimal(value: any): string | null;
 export function serializeDecimal(value: any): string | null {
   if (value === null || value === undefined) return null;
   if (typeof value === 'object' && 'toJSON' in value && typeof (value as any).toJSON === 'function') {
@@ -19,7 +22,10 @@ export function serializeDecimal(value: any): string | null {
   return String(value);
 }
 
-export function serializeDate(value: Date | null | undefined): string | null {
+export function serializeDate(value: null | undefined): null;
+export function serializeDate(value: Date): string;
+export function serializeDate(value: Date | string | null | undefined): string | null;
+export function serializeDate(value: Date | string | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   if (value instanceof Date) return value.toISOString();
   return String(value);

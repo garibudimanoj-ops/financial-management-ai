@@ -22,7 +22,7 @@ vi.mock('next/headers', () => ({
 }));
 
 // Mock Prisma client
-vi.mock('./prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),

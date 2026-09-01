@@ -12,35 +12,52 @@ export class AppError extends Error {
   public readonly statusCode: number;
   public readonly details?: Record<string, unknown>;
 
-  constructor(message: string, code: ErrorCode = 'INTERNAL_ERROR', details?: Record<string, unknown>) {
+  constructor(
+    message: string,
+    code: ErrorCode = 'INTERNAL_ERROR',
+    detailsOrStatusCode?: Record<string, unknown> | number,
+    statusCode?: number
+  ) {
     super(message);
     this.name = 'AppError';
     this.code = code;
-    this.details = details;
 
-    switch (code) {
-      case 'UNAUTHORIZED':
-        this.statusCode = 401;
-        break;
-      case 'FORBIDDEN':
-        this.statusCode = 403;
-        break;
-      case 'NOT_FOUND':
-        this.statusCode = 404;
-        break;
-      case 'CONFLICT':
-        this.statusCode = 409;
-        break;
-      case 'VALIDATION_ERROR':
-        this.statusCode = 422;
-        break;
-      case 'RATE_LIMITED':
-        this.statusCode = 429;
-        break;
-      case 'INTERNAL_ERROR':
-      default:
-        this.statusCode = 500;
-        break;
+    let explicitStatusCode: number | undefined;
+    if (typeof detailsOrStatusCode === 'number') {
+      explicitStatusCode = detailsOrStatusCode;
+      this.details = undefined;
+    } else {
+      this.details = detailsOrStatusCode;
+      explicitStatusCode = statusCode;
+    }
+
+    if (explicitStatusCode) {
+      this.statusCode = explicitStatusCode;
+    } else {
+      switch (code) {
+        case 'UNAUTHORIZED':
+          this.statusCode = 401;
+          break;
+        case 'FORBIDDEN':
+          this.statusCode = 403;
+          break;
+        case 'NOT_FOUND':
+          this.statusCode = 404;
+          break;
+        case 'CONFLICT':
+          this.statusCode = 409;
+          break;
+        case 'VALIDATION_ERROR':
+          this.statusCode = 400;
+          break;
+        case 'RATE_LIMITED':
+          this.statusCode = 429;
+          break;
+        case 'INTERNAL_ERROR':
+        default:
+          this.statusCode = 500;
+          break;
+      }
     }
 
     Object.setPrototypeOf(this, AppError.prototype);
