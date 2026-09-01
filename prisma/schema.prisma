@@ -69,6 +69,7 @@ model User {
   createdInvoices    Invoice[]             @relation("InvoiceCreatedBy")
   createdPayments    Payment[]             @relation("PaymentCreatedBy")
   createdLedgerEntries CustomerLedgerEntry[] @relation("LedgerCreatedBy")
+  createdTransactions Transaction[]        @relation("TransactionCreatedBy")
 }
 
 model Business {
@@ -96,6 +97,8 @@ model Business {
   payments              Payment[]
   ledgerEntries         CustomerLedgerEntry[]
   invoiceSequence       InvoiceSequence?
+  accounts              Account[]
+  transactions          Transaction[]
 }
 
 model BusinessMember {
@@ -385,3 +388,80 @@ model Payment {
   @@index([customerId])
   @@index([businessId, createdAt])
 }
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum TransactionStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+model Account {
+  id          String      @id @default(cuid())
+  businessId  String
+  code        String
+  name        String
+  type        AccountType
+  category    String?
+  currency    String      @default("INR")
+  balance     Decimal     @default(0) @db.Decimal(15, 2)
+  isActive    Boolean     @default(true)
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  business    Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  entries     Entry[]
+
+  @@unique([businessId, code])
+  @@index([businessId])
+  @@index([businessId, type])
+}
+
+model Transaction {
+  id                  String            @id @default(cuid())
+  businessId          String
+  transactionNumber   String
+  date                DateTime          @default(now())
+  description         String
+  reference           String?
+  status              TransactionStatus @default(POSTED)
+  requiresHumanReview Boolean           @default(false)
+  verifiedStatus      String            @default("VERIFIED")
+  createdById         String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  business            Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy           User?             @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  entries             Entry[]
+
+  @@unique([businessId, transactionNumber])
+  @@index([businessId])
+  @@index([businessId, date])
+  @@index([businessId, status])
+}
+
+model Entry {
+  id            String      @id @default(cuid())
+  transactionId String
+  accountId     String
+  debit         Decimal     @default(0) @db.Decimal(15, 2)
+  credit        Decimal     @default(0) @db.Decimal(15, 2)
+  description   String?
+  createdAt     DateTime    @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  account       Account     @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([transactionId])
+  @@index([accountId])
+}
+

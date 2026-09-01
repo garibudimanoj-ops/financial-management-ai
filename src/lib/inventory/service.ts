@@ -271,8 +271,8 @@ export async function getInventorySummary(businessId: string) {
 
   return {
     totalProducts,
-    totalUnits: totalUnits.toString(),
-    totalValuation: totalValuation.toString(),
+    totalUnits,
+    totalValuation,
     lowStockCount,
     recentMovements: recentMovements.map(serializeInventoryMovement),
   };
