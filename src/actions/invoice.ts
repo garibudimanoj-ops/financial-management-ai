@@ -6,9 +6,10 @@ import { logAuditEvent } from '@/lib/audit';
 import { AppError } from '@/lib/errors';
 import { finalizeSale, refundInvoice } from '@/lib/invoices/service';
 import { recordLedgerEntry } from '@/lib/customers/service';
+import { recordSaleInvoiceJournal } from '@/services/accounting/journalBridge';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, Prisma } from '@prisma/client';
 
 const saleItemSchema = z.object({
   productId: z.string().min(1, 'Product is required'),
@@ -99,6 +100,7 @@ export async function issueInvoiceAction(businessId: string, invoiceId: string) 
     }
 
     // Verify stock and deduct inventory
+    let totalCostOfGoods = new Prisma.Decimal(0);
     for (const item of invoice.items) {
       if (!item.productId) continue;
 
@@ -117,6 +119,7 @@ export async function issueInvoiceAction(businessId: string, invoiceId: string) 
         );
       }
 
+      totalCostOfGoods = totalCostOfGoods.plus(product.costPrice.mul(item.quantity));
       const previousStock = product.stockQuantity;
       const resultingStock = previousStock.minus(item.quantity);
 
@@ -163,6 +166,20 @@ export async function issueInvoiceAction(businessId: string, invoiceId: string) 
         userId: context.userId,
       });
     }
+
+    // General Ledger integration: Post double-entry journal
+    await recordSaleInvoiceJournal(tx, {
+      businessId,
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      subtotal: invoice.subtotal,
+      discountAmount: invoice.discountAmount,
+      taxAmount: invoice.taxAmount,
+      totalAmount: invoice.totalAmount,
+      totalCostOfGoods,
+      initialPaid: invoice.paidAmount,
+      userId: context.userId,
+    });
 
     return updatedInvoice;
   }).then(async (result) => {

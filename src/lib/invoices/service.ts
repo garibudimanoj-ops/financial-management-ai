@@ -4,6 +4,7 @@ import { logAuditEvent } from '@/lib/audit';
 import { toDecimal, DecimalLike } from '@/lib/inventory/valuation';
 import { calculateInvoiceTotals, calculateBalanceDue } from './calculations';
 import { recordLedgerEntry } from '@/lib/customers/service';
+import { recordSaleInvoiceJournal, recordPaymentJournal } from '@/services/accounting/journalBridge';
 import { InvoiceStatus, PaymentMethod, Prisma } from '@prisma/client';
 
 export interface FinalizeSaleItemInput {
@@ -245,10 +246,12 @@ export async function finalizeSale(input: FinalizeSaleInput) {
     });
 
     // 8. Create InvoiceItems with historical snapshots
+    let totalCostOfGoods = new Prisma.Decimal(0);
     for (let i = 0; i < input.items.length; i++) {
       const rawItem = input.items[i];
       const product = productMap.get(rawItem.productId)!;
       const computed = calculatedTotals.computedItems[i];
+      totalCostOfGoods = totalCostOfGoods.plus(product.costPrice.mul(computed.quantity));
 
       await tx.invoiceItem.create({
         data: {
@@ -311,6 +314,23 @@ export async function finalizeSale(input: FinalizeSaleInput) {
           userId: input.userId,
         });
       }
+    }
+
+    // 11. General Ledger integration: Post double-entry journal
+    if (isIssuedOrPaid) {
+      await recordSaleInvoiceJournal(tx, {
+        businessId: input.businessId,
+        invoiceId: invoice.id,
+        invoiceNumber,
+        subtotal: calculatedTotals.subtotal,
+        discountAmount: calculatedTotals.discountAmount,
+        taxAmount: calculatedTotals.taxAmount,
+        totalAmount,
+        totalCostOfGoods,
+        initialPaid,
+        paymentMethod: input.initialPayment?.paymentMethod,
+        userId: input.userId,
+      });
     }
 
     return invoice;
@@ -422,6 +442,16 @@ export async function recordInvoicePayment(input: RecordPaymentInput) {
         userId: input.userId,
       });
     }
+
+    // General Ledger integration: Post double-entry journal
+    await recordPaymentJournal(tx, {
+      businessId: input.businessId,
+      paymentId: payment.id,
+      invoiceNumber: invoice.invoiceNumber,
+      amount: payAmount,
+      paymentMethod: input.paymentMethod,
+      userId: input.userId,
+    });
 
     return payment;
   }).then(async (result) => {
