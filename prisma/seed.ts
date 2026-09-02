@@ -1,9 +1,24 @@
+import 'dotenv/config';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/financial_management_ai';
-const pool = new Pool({ connectionString });
+const rawConnectionString = process.env.DATABASE_URL;
+
+if (!rawConnectionString) {
+  throw new Error('DATABASE_URL is not set. Check your .env file.');
+}
+
+const connectionUrl = new URL(rawConnectionString);
+connectionUrl.searchParams.delete('sslmode');
+
+const pool = new Pool({
+  connectionString: connectionUrl.toString(),
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
@@ -28,6 +43,7 @@ async function main() {
       taxId: '27AABCU9603R1ZM',
     },
   });
+
   console.log(`✅ Business initialized: ${business.name} (${business.id})`);
 
   // 2. Upsert Demo Users
@@ -86,16 +102,76 @@ async function main() {
 
   // 4. Upsert Standard Chart of Accounts
   const accountsData = [
-    { code: '1010', name: 'Cash on Hand', type: 'ASSET' as const, category: 'CURRENT_ASSET', balance: new Prisma.Decimal('50000.00') },
-    { code: '1020', name: 'HDFC Bank Current A/C', type: 'ASSET' as const, category: 'BANK', balance: new Prisma.Decimal('500000.00') },
-    { code: '1100', name: 'Accounts Receivable', type: 'ASSET' as const, category: 'CURRENT_ASSET', balance: new Prisma.Decimal('0.00') },
-    { code: '1200', name: 'Inventory Asset', type: 'ASSET' as const, category: 'INVENTORY', balance: new Prisma.Decimal('75000.00') },
-    { code: '2010', name: 'Accounts Payable', type: 'LIABILITY' as const, category: 'CURRENT_LIABILITY', balance: new Prisma.Decimal('0.00') },
-    { code: '2020', name: 'GST Output Payable', type: 'LIABILITY' as const, category: 'TAX_LIABILITY', balance: new Prisma.Decimal('0.00') },
-    { code: '3010', name: "Owner's Equity Capital", type: 'EQUITY' as const, category: 'EQUITY', balance: new Prisma.Decimal('500000.00') },
-    { code: '4010', name: 'Sales Revenue', type: 'REVENUE' as const, category: 'OPERATING_REVENUE', balance: new Prisma.Decimal('125000.00') },
-    { code: '5010', name: 'Cost of Goods Sold', type: 'EXPENSE' as const, category: 'DIRECT_EXPENSE', balance: new Prisma.Decimal('40000.00') },
-    { code: '5020', name: 'Office Rent & Utilities', type: 'EXPENSE' as const, category: 'INDIRECT_EXPENSE', balance: new Prisma.Decimal('10000.00') },
+    {
+      code: '1010',
+      name: 'Cash on Hand',
+      type: 'ASSET' as const,
+      category: 'CURRENT_ASSET',
+      balance: new Prisma.Decimal('50000.00'),
+    },
+    {
+      code: '1020',
+      name: 'HDFC Bank Current A/C',
+      type: 'ASSET' as const,
+      category: 'BANK',
+      balance: new Prisma.Decimal('500000.00'),
+    },
+    {
+      code: '1100',
+      name: 'Accounts Receivable',
+      type: 'ASSET' as const,
+      category: 'CURRENT_ASSET',
+      balance: new Prisma.Decimal('0.00'),
+    },
+    {
+      code: '1200',
+      name: 'Inventory Asset',
+      type: 'ASSET' as const,
+      category: 'INVENTORY',
+      balance: new Prisma.Decimal('75000.00'),
+    },
+    {
+      code: '2010',
+      name: 'Accounts Payable',
+      type: 'LIABILITY' as const,
+      category: 'CURRENT_LIABILITY',
+      balance: new Prisma.Decimal('0.00'),
+    },
+    {
+      code: '2020',
+      name: 'GST Output Payable',
+      type: 'LIABILITY' as const,
+      category: 'TAX_LIABILITY',
+      balance: new Prisma.Decimal('0.00'),
+    },
+    {
+      code: '3010',
+      name: "Owner's Equity Capital",
+      type: 'EQUITY' as const,
+      category: 'EQUITY',
+      balance: new Prisma.Decimal('500000.00'),
+    },
+    {
+      code: '4010',
+      name: 'Sales Revenue',
+      type: 'REVENUE' as const,
+      category: 'OPERATING_REVENUE',
+      balance: new Prisma.Decimal('125000.00'),
+    },
+    {
+      code: '5010',
+      name: 'Cost of Goods Sold',
+      type: 'EXPENSE' as const,
+      category: 'DIRECT_EXPENSE',
+      balance: new Prisma.Decimal('40000.00'),
+    },
+    {
+      code: '5020',
+      name: 'Office Rent & Utilities',
+      type: 'EXPENSE' as const,
+      category: 'INDIRECT_EXPENSE',
+      balance: new Prisma.Decimal('10000.00'),
+    },
   ];
 
   const createdAccounts: Record<string, string> = {};
@@ -122,13 +198,20 @@ async function main() {
         balance: acc.balance,
       },
     });
+
     createdAccounts[acc.code] = record.id;
   }
-  console.log(`✅ Chart of Accounts seeded: ${Object.keys(createdAccounts).length} accounts.`);
+
+  console.log(
+    `✅ Chart of Accounts seeded: ${Object.keys(createdAccounts).length} accounts.`,
+  );
 
   // 5. Seed Balanced Demo Transactions
   const existingTxn = await prisma.transaction.findFirst({
-    where: { businessId: business.id, transactionNumber: 'TXN-DEMO-0001' },
+    where: {
+      businessId: business.id,
+      transactionNumber: 'TXN-DEMO-0001',
+    },
   });
 
   if (!existingTxn) {
@@ -144,13 +227,13 @@ async function main() {
         entries: {
           create: [
             {
-              accountId: createdAccounts['1020'], // Bank A/C Debit
+              accountId: createdAccounts['1020'],
               debit: new Prisma.Decimal('500000.00'),
               credit: new Prisma.Decimal('0.00'),
               description: 'Funds received in HDFC Bank A/C',
             },
             {
-              accountId: createdAccounts['3010'], // Owner's Equity Credit
+              accountId: createdAccounts['3010'],
               debit: new Prisma.Decimal('0.00'),
               credit: new Prisma.Decimal('500000.00'),
               description: 'Capital credited to equity',
@@ -159,11 +242,15 @@ async function main() {
         },
       },
     });
+
     console.log('✅ Demo balanced transaction TXN-DEMO-0001 created.');
   }
 
   const existingSaleTxn = await prisma.transaction.findFirst({
-    where: { businessId: business.id, transactionNumber: 'TXN-DEMO-0002' },
+    where: {
+      businessId: business.id,
+      transactionNumber: 'TXN-DEMO-0002',
+    },
   });
 
   if (!existingSaleTxn) {
@@ -179,13 +266,13 @@ async function main() {
         entries: {
           create: [
             {
-              accountId: createdAccounts['1010'], // Cash Debit
+              accountId: createdAccounts['1010'],
               debit: new Prisma.Decimal('50000.00'),
               credit: new Prisma.Decimal('0.00'),
               description: 'Cash payment received from retail customer',
             },
             {
-              accountId: createdAccounts['4010'], // Sales Revenue Credit
+              accountId: createdAccounts['4010'],
               debit: new Prisma.Decimal('0.00'),
               credit: new Prisma.Decimal('50000.00'),
               description: 'Retail trading revenue recorded',
@@ -194,6 +281,7 @@ async function main() {
         },
       },
     });
+
     console.log('✅ Demo balanced transaction TXN-DEMO-0002 created.');
   }
 
