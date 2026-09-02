@@ -8,6 +8,12 @@ import {
   CustomerLedgerEntry,
   InventoryBatch,
   Business,
+  Supplier,
+  PurchaseBill,
+  PurchaseBillItem,
+  PurchasePayment,
+  Expense,
+  ExpenseCategory,
   Prisma,
 } from '@prisma/client';
 
@@ -77,6 +83,23 @@ export function serializeCustomerSummary(c: CustomerSummary | null | undefined):
     name: c.name,
     email: c.email,
     phone: c.phone,
+  };
+}
+
+export interface SupplierSummary {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+}
+
+export function serializeSupplierSummary(s: SupplierSummary | null | undefined): SupplierSummary | null {
+  if (!s) return null;
+  return {
+    id: s.id,
+    name: s.name,
+    email: s.email,
+    phone: s.phone,
   };
 }
 
@@ -286,6 +309,153 @@ export function serializeCustomerLedgerEntry(entry: CustomerLedgerEntry & {
       ? { id: entry.invoice.id, invoiceNumber: entry.invoice.invoiceNumber }
       : null,
     payment: entry.payment ? { id: entry.payment.id } : null,
+  };
+}
+
+export function serializeSupplier(supplier: Supplier) {
+  return {
+    id: supplier.id,
+    businessId: supplier.businessId,
+    name: supplier.name,
+    contactPerson: supplier.contactPerson,
+    email: supplier.email,
+    phone: supplier.phone,
+    gstin: supplier.gstin,
+    pan: supplier.pan,
+    address: supplier.address,
+    city: supplier.city,
+    state: supplier.state,
+    pincode: supplier.pincode,
+    paymentTerms: supplier.paymentTerms,
+    creditLimit: serializeDecimal(supplier.creditLimit as any),
+    currentBalance: serializeDecimal(supplier.currentBalance as any),
+    archived: supplier.archived,
+    notes: supplier.notes,
+    createdById: supplier.createdById,
+    createdAt: serializeDate(supplier.createdAt),
+    updatedAt: serializeDate(supplier.updatedAt),
+  };
+}
+
+export function serializePurchaseBillItem(item: PurchaseBillItem) {
+  return {
+    id: item.id,
+    billId: item.billId,
+    productId: item.productId,
+    productNameSnapshot: item.productNameSnapshot,
+    skuSnapshot: item.skuSnapshot,
+    unitSnapshot: item.unitSnapshot,
+    quantity: serializeDecimal(item.quantity as any),
+    unitCost: serializeDecimal(item.unitCost as any),
+    discount: serializeDecimal(item.discount as any),
+    taxRate: serializeDecimal(item.taxRate as any),
+    taxAmount: serializeDecimal(item.taxAmount as any),
+    lineSubtotal: serializeDecimal(item.lineSubtotal as any),
+    lineTotal: serializeDecimal(item.lineTotal as any),
+    createdAt: serializeDate(item.createdAt),
+  };
+}
+
+export function serializePurchaseBill(bill: PurchaseBill & {
+  items?: PurchaseBillItem[];
+  supplier?: { id: string; name: string; email: string | null; phone: string | null; gstin: string | null } | null;
+  payments?: PurchasePayment[];
+  createdBy?: { id: string; email: string; name: string | null } | null;
+}) {
+  return {
+    id: bill.id,
+    businessId: bill.businessId,
+    supplierId: bill.supplierId,
+    billNumber: bill.billNumber,
+    supplierInvoiceNumber: bill.supplierInvoiceNumber,
+    status: bill.status,
+    billDate: serializeDate(bill.billDate),
+    dueDate: serializeDate(bill.dueDate),
+    subtotal: serializeDecimal(bill.subtotal as any),
+    discountAmount: serializeDecimal(bill.discountAmount as any),
+    taxAmount: serializeDecimal(bill.taxAmount as any),
+    cgstAmount: serializeDecimal(bill.cgstAmount as any),
+    sgstAmount: serializeDecimal(bill.sgstAmount as any),
+    igstAmount: serializeDecimal(bill.igstAmount as any),
+    totalAmount: serializeDecimal(bill.totalAmount as any),
+    paidAmount: serializeDecimal(bill.paidAmount as any),
+    balanceDue: serializeDecimal(bill.balanceDue as any),
+    notes: bill.notes,
+    idempotencyKey: bill.idempotencyKey,
+    createdById: bill.createdById,
+    createdAt: serializeDate(bill.createdAt),
+    updatedAt: serializeDate(bill.updatedAt),
+    items: (bill.items || []).map(serializePurchaseBillItem),
+    supplier: bill.supplier
+      ? {
+          id: bill.supplier.id,
+          name: bill.supplier.name,
+          email: bill.supplier.email,
+          phone: bill.supplier.phone,
+          gstin: bill.supplier.gstin,
+        }
+      : null,
+    payments: (bill.payments || []).map(serializePurchasePayment),
+    createdBy: serializeUserSummary(bill.createdBy),
+  };
+}
+
+export function serializePurchasePayment(payment: PurchasePayment & {
+  supplier?: { id: string; name: string } | null;
+  bill?: { id: string; billNumber: string } | null;
+  createdBy?: { id: string; email: string; name: string | null } | null;
+}) {
+  return {
+    id: payment.id,
+    businessId: payment.businessId,
+    billId: payment.billId,
+    supplierId: payment.supplierId,
+    amount: serializeDecimal(payment.amount as any),
+    paymentMethod: payment.paymentMethod,
+    paymentDate: serializeDate(payment.paymentDate),
+    reference: payment.reference,
+    notes: payment.notes,
+    idempotencyKey: payment.idempotencyKey,
+    createdById: payment.createdById,
+    createdAt: serializeDate(payment.createdAt),
+    updatedAt: serializeDate(payment.updatedAt),
+    supplier: payment.supplier ? { id: payment.supplier.id, name: payment.supplier.name } : null,
+    bill: payment.bill ? { id: payment.bill.id, billNumber: payment.bill.billNumber } : null,
+    createdBy: serializeUserSummary(payment.createdBy),
+  };
+}
+
+export function serializeExpense(expense: Expense & {
+  account?: { id: string; code: string; name: string } | null;
+  category?: { id: string; name: string } | null;
+  supplier?: { id: string; name: string } | null;
+  createdBy?: { id: string; email: string; name: string | null } | null;
+}) {
+  return {
+    id: expense.id,
+    businessId: expense.businessId,
+    expenseNumber: expense.expenseNumber,
+    categoryId: expense.categoryId,
+    accountId: expense.accountId,
+    supplierId: expense.supplierId,
+    payeeName: expense.payeeName,
+    amount: serializeDecimal(expense.amount as any),
+    taxRate: serializeDecimal(expense.taxRate as any),
+    taxAmount: serializeDecimal(expense.taxAmount as any),
+    totalAmount: serializeDecimal(expense.totalAmount as any),
+    paymentMethod: expense.paymentMethod,
+    paymentStatus: expense.paymentStatus,
+    expenseDate: serializeDate(expense.expenseDate),
+    reference: expense.reference,
+    receiptUrl: expense.receiptUrl,
+    notes: expense.notes,
+    createdById: expense.createdById,
+    createdAt: serializeDate(expense.createdAt),
+    updatedAt: serializeDate(expense.updatedAt),
+    account: expense.account ? { id: expense.account.id, code: expense.account.code, name: expense.account.name } : null,
+    category: expense.category ? { id: expense.category.id, name: expense.category.name } : null,
+    supplier: expense.supplier ? { id: expense.supplier.id, name: expense.supplier.name } : null,
+    createdBy: serializeUserSummary(expense.createdBy),
   };
 }
 
