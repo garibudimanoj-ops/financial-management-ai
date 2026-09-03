@@ -18,6 +18,7 @@ export async function getTrialBalance(businessId: string): Promise<TrialBalanceR
         where: {
           transaction: {
             status: 'POSTED',
+            businessId,
           },
         },
         select: {
@@ -101,6 +102,7 @@ export async function getProfitAndLoss(
         where: {
           transaction: {
             status: 'POSTED',
+            businessId,
             ...(startDate || endDate ? { date: dateFilter } : {}),
           },
         },
@@ -165,7 +167,7 @@ export async function getProfitAndLoss(
       totalExpenses: totalExpenses.toString(),
     },
     netProfitOrLoss: netProfitOrLoss.toString(),
-    isProfitable: netProfitOrLoss.greaterThanOrEqualTo(0),
+    isProfitable: netProfitOrLoss.greaterThan(0),
   };
 }
 
@@ -189,6 +191,7 @@ export async function getBalanceSheet(
         where: {
           transaction: {
             status: 'POSTED',
+            businessId,
             date: { lte: targetDate },
           },
         },

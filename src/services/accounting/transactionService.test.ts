@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createTransaction, getTransactionById, listTransactions } from './transactionService';
-import { prisma } from '@/lib/prisma';
-import { AppError } from '@/lib/errors';
+import { prisma } from '../../lib/prisma';
+import { AppError } from '../../lib/errors';
 import { Prisma } from '@prisma/client';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $transaction: vi.fn((callback) => callback(prisma)),
+    transactionSequence: {
+      upsert: vi.fn().mockResolvedValue({ currentNumber: 1 }),
+    },
     account: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -25,6 +28,7 @@ vi.mock('@/lib/prisma', () => ({
 describe('Accounting Transaction Service - Double Entry Engine', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(prisma.transactionSequence.upsert).mockResolvedValue({ currentNumber: 1 } as any);
   });
 
   describe('createTransaction', () => {
