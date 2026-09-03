@@ -1,4 +1,5 @@
 import { requireBusinessContext } from '@/lib/auth';
+import { getInventorySummary } from '@/lib/inventory/service';
 import { prisma } from '@/lib/prisma';
 import BusinessSwitcher from '@/components/BusinessSwitcher';
 import Link from 'next/link';
@@ -82,7 +83,7 @@ export default async function DashboardPage({
     totalPayments,
     filteredPayments,
     outstandingReceivables,
-    inventoryValue,
+    inventoryValuation,
   ] = await Promise.all([
     prisma.product.count({ where: { businessId: context.businessId, archived: false } }),
     prisma.customer.count({ where: { businessId: context.businessId, archived: false } }),
@@ -114,10 +115,8 @@ export default async function DashboardPage({
       _sum: { amount: true },
     }),
     prisma.customer.aggregate({ where: { businessId: context.businessId }, _sum: { currentBalance: true } }),
-    prisma.product.aggregate({
-      where: { businessId: context.businessId, archived: false },
-      _sum: { stockQuantity: true },
-    }),
+    // Monetary inventory valuation (weighted-average cost), not a raw unit count.
+    getInventorySummary(context.businessId),
   ]);
 
   const currency = business?.baseCurrency || 'INR';
@@ -323,7 +322,7 @@ export default async function DashboardPage({
             >
               <span className="text-xs text-gray-400 group-hover:text-indigo-300 transition-colors">Inventory Value</span>
               <p className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">
-                {fmt(inventoryValue._sum.stockQuantity?.toNumber())}
+                {fmt(inventoryValuation.totalValuation.toNumber())}
               </p>
               <span className="text-[10px] text-gray-600">At weighted-average cost</span>
             </Link>

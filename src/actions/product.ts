@@ -8,6 +8,7 @@ import { addStock } from '@/lib/inventory/service';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import { serializeProduct } from '@/lib/serialize';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
@@ -279,4 +280,19 @@ export async function unarchiveProduct(businessId: string, productId: string) {
   revalidatePath('/inventory');
 
   return updated;
+}
+
+/**
+ * Lists the active products for a business, mirroring the query the POS page
+ * and the products list page use. Used by the POS terminal to refresh its
+ * product cache after a stale-stock checkout failure so the cashier always
+ * sees current stock. The server remains the final authority on stock.
+ */
+export async function listProducts(businessId: string) {
+  const context = await requirePermission(businessId, 'PRODUCT_READ');
+  const products = await prisma.product.findMany({
+    where: { businessId, archived: false },
+    orderBy: { name: 'asc' },
+  });
+  return products.map(serializeProduct);
 }

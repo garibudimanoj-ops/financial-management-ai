@@ -85,10 +85,13 @@ export async function createTransaction(input: CreateTransactionDTO): Promise<Tr
 
     const accountMap = new Map(accounts.map((a) => [a.id, a]));
 
-    // 2. Generate unique transaction number
-    const count = await tx.transaction.count({ where: { businessId } });
-    const datePrefix = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const transactionNumber = `TXN-${datePrefix}-${String(count + 1).padStart(4, '0')}`;
+    // 2. Generate unique transaction number using concurrency-safe sequence
+    const seq = await tx.transactionSequence.upsert({
+      where: { businessId },
+      create: { businessId, currentNumber: 1 },
+      update: { currentNumber: { increment: 1 } },
+    });
+    const transactionNumber = `TXN-${String(seq.currentNumber).padStart(6, '0')}`;
 
     const status = input.status || 'POSTED';
 

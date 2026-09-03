@@ -243,6 +243,8 @@ export function serializePayment(payment: Payment) {
     receivedAt: serializeDate(payment.receivedAt),
     createdById: payment.createdById,
     createdAt: serializeDate(payment.createdAt),
+    reversedAt: serializeDate(payment.reversedAt),
+    reversalReason: payment.reversalReason,
   };
 }
 

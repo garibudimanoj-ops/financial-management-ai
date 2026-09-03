@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireBusinessContext } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { AppError } from '@/lib/errors';
 
 function escapeCSV(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -19,8 +20,9 @@ function decimalToString(val: Prisma.Decimal | null | undefined): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const context = await requireBusinessContext();
     const { searchParams } = new URL(request.url);
+    const requestedBusinessId = searchParams.get('businessId') || searchParams.get('companyId') || undefined;
+    const context = await requirePermission(requestedBusinessId, 'REPORT_EXPORT');
     const type = searchParams.get('type') || 'invoices';
 
     let csv = '';
@@ -133,6 +135,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.statusCode });
+    }
     console.error('CSV export error:', error);
     return new NextResponse('Export failed', { status: 500 });
   }

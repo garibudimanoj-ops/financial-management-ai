@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server';
 import { withErrorHandling, jsonResponse } from '@/lib/apiResponse';
 import { getBalanceSheet } from '@/services/accounting/reportService';
-import { requireBusinessContext } from '@/lib/auth';
-import { AppError } from '@/lib/errors';
+import { requirePermission } from '@/lib/auth';
 
 /**
  * GET /api/reports/balance-sheet
@@ -10,18 +9,11 @@ import { AppError } from '@/lib/errors';
  */
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
-  let businessId = searchParams.get('businessId') || searchParams.get('companyId') || undefined;
+  const requestedBusinessId = searchParams.get('businessId') || searchParams.get('companyId') || undefined;
   const asOfDate = searchParams.get('asOfDate') || undefined;
 
-  if (!businessId) {
-    try {
-      const context = await requireBusinessContext();
-      businessId = context.businessId;
-    } catch {
-      throw new AppError('Business ID is required as a query parameter', 'VALIDATION_ERROR', 400);
-    }
-  }
+  const context = await requirePermission(requestedBusinessId, 'REPORT_READ');
 
-  const report = await getBalanceSheet(businessId, asOfDate);
+  const report = await getBalanceSheet(context.businessId, asOfDate);
   return jsonResponse(report);
 });

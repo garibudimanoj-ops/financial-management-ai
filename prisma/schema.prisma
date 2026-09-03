@@ -76,6 +76,7 @@ model User {
   inventoryMovements   InventoryMovement[]   @relation("MovementCreatedBy")
   createdInvoices      Invoice[]             @relation("InvoiceCreatedBy")
   createdPayments      Payment[]             @relation("PaymentCreatedBy")
+  reversedPayments     Payment[]             @relation("PaymentReversedBy")
   createdLedgerEntries CustomerLedgerEntry[] @relation("LedgerCreatedBy")
   createdTransactions  Transaction[]         @relation("TransactionCreatedBy")
   createdSuppliers     Supplier[]            @relation("SupplierCreatedBy")
@@ -118,6 +119,7 @@ model Business {
   expenses              Expense[]
   purchaseSequence      PurchaseSequence?
   expenseSequence       ExpenseSequence?
+  transactionSequence   TransactionSequence?
 }
 
 model BusinessMember {
@@ -396,11 +398,17 @@ model Payment {
   createdById    String?
   createdAt      DateTime              @default(now())
 
+  // Reversal metadata. Nullable: a payment is reversible only until it has been reversed.
+  reversedAt     DateTime?
+  reversedById   String?
+  reversalReason String?
+
   business       Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
   invoice        Invoice?              @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   customer       Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
   ledgerEntries  CustomerLedgerEntry[]
   createdBy      User?                 @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  reversedBy     User?                 @relation("PaymentReversedBy", fields: [reversedById], references: [id], onDelete: SetNull)
 
   @@unique([businessId, idempotencyKey])
   @@index([businessId])
@@ -682,6 +690,15 @@ model ExpenseSequence {
   businessId    String   @unique
   currentNumber Int      @default(0)
   prefix        String   @default("EXP")
+  updatedAt     DateTime @updatedAt
+
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model TransactionSequence {
+  id            String   @id @default(cuid())
+  businessId    String   @unique
+  currentNumber Int      @default(0)
   updatedAt     DateTime @updatedAt
 
   business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

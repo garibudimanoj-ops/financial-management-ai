@@ -1,6 +1,24 @@
 import { Prisma } from '@prisma/client';
 import { getStandardAccountMap } from './accountService';
-import { AppError } from '@/lib/errors';
+import { AppError } from '../../lib/errors';
+
+/**
+ * Generates a concurrency-safe, incrementing transaction number scoped to a business.
+ * Uses upsert + atomic increment on TransactionSequence — identical in approach to
+ * InvoiceSequence and PurchaseSequence, which are already in production.
+ */
+async function generateNextTransactionNumber(
+  tx: Prisma.TransactionClient,
+  businessId: string,
+  prefix = 'TXN'
+): Promise<string> {
+  const seq = await tx.transactionSequence.upsert({
+    where: { businessId },
+    create: { businessId, currentNumber: 1 },
+    update: { currentNumber: { increment: 1 } },
+  });
+  return `${prefix}-${String(seq.currentNumber).padStart(6, '0')}`;
+}
 
 export interface SaleJournalInput {
   businessId: string;
@@ -86,7 +104,7 @@ export async function recordSaleInvoiceJournal(
   if (!salesRevAcc || !arAcc) throw new AppError('Required sales ledger accounts are unavailable', 'VALIDATION_ERROR');
 
   const date = input.date || new Date();
-  const netSalesRevenue = input.subtotal.minus(input.discountAmount);
+  const netSalesRevenue = Prisma.Decimal.max(0, input.totalAmount.minus(input.taxAmount));
   const totalAmount = input.totalAmount;
   const initialPaid = input.initialPaid || new Prisma.Decimal(0);
   const receivableAmount = totalAmount.minus(initialPaid);
@@ -168,9 +186,7 @@ export async function recordSaleInvoiceJournal(
     return null;
   }
 
-  const count = await tx.transaction.count({ where: { businessId: input.businessId } });
-  const datePrefix = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const transactionNumber = `TXN-${datePrefix}-${String(count + 1).padStart(4, '0')}`;
+  const transactionNumber = await generateNextTransactionNumber(tx, input.businessId);
 
   const transaction = await tx.transaction.create({
     data: {
@@ -179,6 +195,8 @@ export async function recordSaleInvoiceJournal(
       date,
       description: `Sales Invoice #${input.invoiceNumber}`,
       reference: input.invoiceNumber,
+      sourceType: 'INVOICE',
+      sourceId: input.invoiceId,
       status: 'POSTED',
       requiresHumanReview: false,
       verifiedStatus: 'VERIFIED',
@@ -253,9 +271,7 @@ export async function recordPaymentJournal(
     },
   ];
 
-  const count = await tx.transaction.count({ where: { businessId: input.businessId } });
-  const datePrefix = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const transactionNumber = `TXN-${datePrefix}-${String(count + 1).padStart(4, '0')}`;
+  const transactionNumber = await generateNextTransactionNumber(tx, input.businessId);
 
   const transaction = await tx.transaction.create({
     data: {
@@ -264,6 +280,8 @@ export async function recordPaymentJournal(
       date,
       description: `Customer Payment Received ${input.invoiceNumber ? `(Invoice #${input.invoiceNumber})` : ''}`.trim(),
       reference: input.invoiceNumber || input.paymentId,
+      sourceType: 'PAYMENT',
+      sourceId: input.paymentId,
       status: 'POSTED',
       requiresHumanReview: false,
       verifiedStatus: 'VERIFIED',
@@ -368,9 +386,7 @@ export async function recordPurchaseBillJournal(
     throw new AppError(`Purchase journal is unbalanced: debits ${totalDebit.toString()} do not equal credits ${totalCredit.toString()}`, 'VALIDATION_ERROR');
   }
 
-  const count = await tx.transaction.count({ where: { businessId: input.businessId } });
-  const datePrefix = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const transactionNumber = `TXN-${datePrefix}-${String(count + 1).padStart(4, '0')}`;
+  const transactionNumber = await generateNextTransactionNumber(tx, input.businessId);
 
   const transaction = await tx.transaction.create({
     data: {
@@ -454,9 +470,7 @@ export async function recordSupplierPaymentJournal(
     },
   ];
 
-  const count = await tx.transaction.count({ where: { businessId: input.businessId } });
-  const datePrefix = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const transactionNumber = `TXN-${datePrefix}-${String(count + 1).padStart(4, '0')}`;
+  const transactionNumber = await generateNextTransactionNumber(tx, input.businessId);
 
   const transaction = await tx.transaction.create({
     data: {
@@ -571,9 +585,7 @@ export async function recordExpenseJournal(
 
   if (!totalDebit.equals(totalCredit)) throw new AppError(`Expense journal is unbalanced: debits ${totalDebit.toString()} do not equal credits ${totalCredit.toString()}`, 'VALIDATION_ERROR');
 
-  const count = await tx.transaction.count({ where: { businessId: input.businessId } });
-  const datePrefix = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const transactionNumber = `TXN-${datePrefix}-${String(count + 1).padStart(4, '0')}`;
+  const transactionNumber = await generateNextTransactionNumber(tx, input.businessId);
 
   const transaction = await tx.transaction.create({
     data: {
@@ -628,7 +640,7 @@ export async function reverseSourceJournal(
     where: { businessId: input.businessId, sourceType: input.sourceType, sourceId: input.sourceId, status: 'POSTED' },
     include: { entries: true },
   });
-  if (!original) throw new AppError(`Posted journal for ${input.sourceType} was not found`, 'NOT_FOUND');
+  if (!original) return null;
   const date = input.date || new Date();
   const reversal = await tx.transaction.create({
     data: {

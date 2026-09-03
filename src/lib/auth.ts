@@ -191,7 +191,7 @@ export async function requireMembership(businessId: string): Promise<BusinessCon
 /**
  * Ensures the authenticated user has one of the required roles in the business context.
  */
-export async function requireRole(requestedBusinessId: string, allowedRoles: Role[]): Promise<BusinessContext> {
+export async function requireRole(requestedBusinessId: string | undefined, allowedRoles: Role[]): Promise<BusinessContext> {
   const context = await requireBusinessContext(requestedBusinessId);
 
   if (!allowedRoles.includes(context.role)) {
@@ -204,7 +204,7 @@ export async function requireRole(requestedBusinessId: string, allowedRoles: Rol
 /**
  * Ensures the authenticated user has the required permission for the business context.
  */
-export async function requirePermission(requestedBusinessId: string, permission: Permission): Promise<BusinessContext> {
+export async function requirePermission(requestedBusinessId: string | undefined, permission: Permission): Promise<BusinessContext> {
   const context = await requireBusinessContext(requestedBusinessId);
 
   if (!hasPermission(context.role, permission)) {

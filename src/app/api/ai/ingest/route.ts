@@ -3,7 +3,7 @@ import { withErrorHandling, jsonResponse } from '@/lib/apiResponse';
 import { parseFinancialDocument } from '@/services/ai/documentParser';
 import { orchestrateDocumentToDraftTransaction } from '@/services/ai/llmOrchestrator';
 import { prisma } from '@/lib/prisma';
-import { requireBusinessContext } from '@/lib/auth';
+import { requirePermission } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 import { checkRateLimit } from '@/lib/rateLimit';
 
@@ -21,18 +21,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   }
 
   const body = await req.json();
-  let businessId = body.businessId || body.companyId;
-  let userId: string | undefined = undefined;
-
-  try {
-    const context = await requireBusinessContext(businessId);
-    businessId = context.businessId;
-    userId = context.userId;
-  } catch {
-    if (!businessId) {
-      throw new AppError('businessId (or companyId) is required', 'VALIDATION_ERROR', 400);
-    }
-  }
+  const requestedBusinessId = body.businessId || body.companyId;
+  const context = await requirePermission(requestedBusinessId, 'AI_FINANCIAL_READ');
+  const { businessId, userId } = context;
 
   const fileName = body.fileName || 'uploaded-invoice.pdf';
   const fileContent = body.fileContent || '';

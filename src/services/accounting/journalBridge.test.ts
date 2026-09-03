@@ -19,13 +19,16 @@ describe('Accounting Journal Bridge', () => {
       ])
     );
 
-    mockTx = {
+mockTx = {
       transaction: {
         count: vi.fn().mockResolvedValue(0),
         create: vi.fn().mockImplementation(async (args) => ({
           id: 'txn-123',
           ...args.data,
         })),
+      },
+      transactionSequence: {
+        upsert: vi.fn().mockResolvedValue({ currentNumber: 1 }),
       },
       account: {
         update: vi.fn().mockResolvedValue({}),

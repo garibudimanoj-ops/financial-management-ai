@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '../../lib/prisma';
 import { Prisma, AccountType } from '@prisma/client';
 import { AppError } from '@/lib/errors';
 

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { withErrorHandling, jsonResponse } from '@/lib/apiResponse';
 import { prisma } from '@/lib/prisma';
-import { requireBusinessContext } from '@/lib/auth';
+import { requirePermission, requireRole } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 import { AccountType } from '@prisma/client';
 
@@ -11,16 +11,9 @@ import { AccountType } from '@prisma/client';
  */
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
-  let businessId = searchParams.get('businessId') || searchParams.get('companyId') || undefined;
-
-  if (!businessId) {
-    try {
-      const context = await requireBusinessContext();
-      businessId = context.businessId;
-    } catch {
-      throw new AppError('Business ID is required', 'VALIDATION_ERROR', 400);
-    }
-  }
+  const requestedBusinessId = searchParams.get('businessId') || searchParams.get('companyId') || undefined;
+  const context = await requirePermission(requestedBusinessId, 'REPORT_READ');
+  const businessId = context.businessId;
 
   const accounts = await prisma.account.findMany({
     where: { businessId },
@@ -51,12 +44,9 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
  */
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const body = await req.json();
-  let businessId = body.businessId || body.companyId;
-
-  if (!businessId) {
-    const context = await requireBusinessContext();
-    businessId = context.businessId;
-  }
+  const requestedBusinessId = body.businessId || body.companyId;
+  const context = await requireRole(requestedBusinessId, ['OWNER', 'ADMIN']);
+  const businessId = context.businessId;
 
   if (!body.code || !body.name || !body.type) {
     throw new AppError('code, name, and type are required', 'VALIDATION_ERROR', 400);
