@@ -1,7 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Prisma } from '@prisma/client';
+
+// Mock dependencies BEFORE importing the module under test, so module evaluation
+// does not trigger database connection initialization.
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    account: { findMany: vi.fn(), update: vi.fn() },
+    business: { findUnique: vi.fn() },
+  },
+}));
+
+vi.mock('./accountService', () => ({
+  getStandardAccountMap: vi.fn(),
+}));
+
 import { recordSaleInvoiceJournal, recordPaymentJournal } from './journalBridge';
 import * as accountService from './accountService';
-import { Prisma } from '@prisma/client';
 
 describe('Accounting Journal Bridge', () => {
   let mockTx: any;
