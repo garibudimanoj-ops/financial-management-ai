@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
+    "postinstall": "prisma generate",
     "preflight": "tsx scripts/preflight.ts"
   },
   "prisma": {
