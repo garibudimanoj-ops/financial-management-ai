@@ -121,7 +121,7 @@ export default function ProductList({ businessId, currency, products, canManage 
             <span className="text-gray-400 font-medium">Status:</span>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as 'ACTIVE' | 'ARCHIVED' | 'ALL')}
               className="bg-transparent text-white font-medium focus:outline-none cursor-pointer"
             >
               <option value="ACTIVE" className="bg-gray-900 text-white">Active Only</option>

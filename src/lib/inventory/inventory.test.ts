@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { addStock, adjustStock, getInventorySummary, getInventoryMovements } from './service';
-import { prisma } from '@/lib/prisma';
-import { AppError } from '@/lib/errors';
+import { prisma } from '../../lib/prisma';
+import { AppError } from '../../lib/errors';
 import { Prisma } from '@prisma/client';
 
 // Mock Prisma
-vi.mock('@/lib/prisma', () => ({
+vi.mock('../../lib/prisma', () => ({
   prisma: {
     $transaction: vi.fn((callback) => callback(prisma)),
     product: {
@@ -307,6 +307,43 @@ describe('Inventory Domain Service & Concurrency Safety', () => {
       // Valuation: (10 * 50) + (2 * 100) = 500 + 200 = 700
       expect(summary.totalValuation.equals(new Prisma.Decimal('700'))).toBe(true);
       expect(summary.lowStockCount).toBe(1);
+    });
+
+    it('returns a monetary valuation (not a unit count) for the dashboard Inventory Value metric', async () => {
+      vi.mocked(prisma.product.findMany).mockResolvedValue([
+        {
+          id: 'prod-1',
+          stockQuantity: new Prisma.Decimal('5.0000'),
+          costPrice: new Prisma.Decimal('10.00'),
+          lowStockThreshold: new Prisma.Decimal('2.0000'),
+        },
+        {
+          id: 'prod-2',
+          stockQuantity: new Prisma.Decimal('3.0000'),
+          costPrice: new Prisma.Decimal('20.00'),
+          lowStockThreshold: new Prisma.Decimal('2.0000'),
+        },
+      ] as any);
+      vi.mocked(prisma.inventoryMovement.findMany).mockResolvedValue([]);
+
+      const summary = await getInventorySummary('biz-A');
+
+      // totalUnits is a raw count (8), totalValuation is monetary (5*10 + 3*20 = 110).
+      expect(summary.totalUnits.equals(new Prisma.Decimal('8'))).toBe(true);
+      expect(summary.totalValuation.equals(new Prisma.Decimal('110'))).toBe(true);
+      // The dashboard must display totalValuation, never totalUnits.
+      expect(summary.totalValuation.greaterThan(summary.totalUnits)).toBe(true);
+    });
+
+    it('returns zero monetary valuation for an empty business', async () => {
+      vi.mocked(prisma.product.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.inventoryMovement.findMany).mockResolvedValue([]);
+
+      const summary = await getInventorySummary('biz-empty');
+
+      expect(summary.totalProducts).toBe(0);
+      expect(summary.totalValuation.equals(new Prisma.Decimal('0'))).toBe(true);
+      expect(summary.totalUnits.equals(new Prisma.Decimal('0'))).toBe(true);
     });
   });
 });

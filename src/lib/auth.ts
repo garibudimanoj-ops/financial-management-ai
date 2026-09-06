@@ -17,6 +17,86 @@ export interface BusinessContext {
 }
 
 /**
+ * Synchronizes an authenticated Supabase user with the local Prisma User record.
+ * 1. Checks by supabaseUserId.
+ * 2. If not found, safely checks by email and links the real supabaseUserId.
+ * 3. If neither exists, creates a new local Prisma User.
+ * 4. Ensures allowed development/demo accounts receive active demo business memberships.
+ */
+export async function syncPrismaUser(supabaseUser: {
+  id: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}): Promise<User> {
+  const email = supabaseUser.email;
+  if (!email) {
+    throw new AppError('Unauthorized: Supabase user has no email', 'UNAUTHORIZED');
+  }
+
+  // 1. Check by real Supabase UUID
+  let user = await prisma.user.findUnique({
+    where: { supabaseUserId: supabaseUser.id },
+  });
+
+  // 2. If not found by Supabase UUID, lookup by email to link existing local records
+  if (!user) {
+    user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user) {
+      // 3. Update existing user's supabaseUserId to match the real Supabase UUID
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          supabaseUserId: supabaseUser.id,
+          name: typeof supabaseUser.user_metadata?.name === 'string' ? supabaseUser.user_metadata.name : user.name,
+        },
+      });
+      console.log(`[Auth Sync] Linked existing Prisma User ID: ${user.id} to Supabase User ID: ${supabaseUser.id}`);
+    }
+  }
+
+  // 4. If user still does not exist, create new Prisma User
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        supabaseUserId: supabaseUser.id,
+        email,
+        name: typeof supabaseUser.user_metadata?.name === 'string' ? supabaseUser.user_metadata.name : null,
+      },
+    });
+    console.log(`[Auth Sync] Created new Prisma User ID: ${user.id} for Supabase User ID: ${supabaseUser.id}`);
+  }
+
+  // 5. If this is a demo account, ensure active membership in demo business
+  if (user.email === 'admin@apexglobal.demo' || user.email === 'staff@apexglobal.demo') {
+    const demoBiz = await prisma.business.findUnique({ where: { id: 'biz-apex-demo' } });
+    if (demoBiz) {
+      await prisma.businessMember.upsert({
+        where: {
+          businessId_userId: {
+            businessId: demoBiz.id,
+            userId: user.id,
+          },
+        },
+        update: {
+          status: 'ACTIVE',
+        },
+        create: {
+          businessId: demoBiz.id,
+          userId: user.id,
+          role: user.email === 'admin@apexglobal.demo' ? 'OWNER' : 'STAFF',
+          status: 'ACTIVE',
+        },
+      });
+    }
+  }
+
+  return user;
+}
+
+/**
  * Gets authenticated Supabase user and resolves the local User record.
  * Throws UNAUTHORIZED AppError if not authenticated.
  */
@@ -28,27 +108,13 @@ export async function requireAuth(): Promise<User> {
     throw new AppError('Unauthorized: No active session', 'UNAUTHORIZED');
   }
 
-  let user = await prisma.user.findUnique({
-    where: { supabaseUserId: supabaseUser.id },
-  });
-
-  // If user is authenticated in Supabase but doesn't exist in Prisma DB yet, auto-create
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        supabaseUserId: supabaseUser.id,
-        email: supabaseUser.email!,
-        name: supabaseUser.user_metadata?.name || null,
-      },
-    });
-  }
-
-  return user;
+  return await syncPrismaUser(supabaseUser);
 }
 
 /**
  * Resolves the business context for a requested business or active cookie selection.
  * If no businessId is requested, checks 'current_business_id' cookie, then defaults to first active membership.
+ * Strictly verifies that the authenticated user has an ACTIVE membership in the target business.
  */
 export async function requireBusinessContext(requestedBusinessId?: string): Promise<BusinessContext> {
   const user = await requireAuth();
@@ -83,6 +149,7 @@ export async function requireBusinessContext(requestedBusinessId?: string): Prom
     });
 
     if (!defaultMembership) {
+      console.warn(`[Auth Warning] No active business membership found for Prisma User: ${user.id} (${user.email}) | Supabase ID: ${user.supabaseUserId}`);
       throw new AppError('No business context: User has no active business membership', 'NOT_FOUND');
     }
     targetBusinessId = defaultMembership.businessId;
@@ -98,8 +165,11 @@ export async function requireBusinessContext(requestedBusinessId?: string): Prom
   });
 
   if (!member || member.status !== 'ACTIVE') {
+    console.warn(`[Auth Warning] User ${user.id} (${user.email}) is not an active member of requested business: ${targetBusinessId}`);
     throw new AppError('Forbidden: User is not an active member of this business', 'FORBIDDEN');
   }
+
+  console.log(`[Auth] Supabase User ID: ${user.supabaseUserId} | Prisma User ID: ${user.id} | Selected Business ID: ${member.businessId} | Role: ${member.role}`);
 
   return {
     userId: user.id,
@@ -121,7 +191,7 @@ export async function requireMembership(businessId: string): Promise<BusinessCon
 /**
  * Ensures the authenticated user has one of the required roles in the business context.
  */
-export async function requireRole(requestedBusinessId: string, allowedRoles: Role[]): Promise<BusinessContext> {
+export async function requireRole(requestedBusinessId: string | undefined, allowedRoles: Role[]): Promise<BusinessContext> {
   const context = await requireBusinessContext(requestedBusinessId);
 
   if (!allowedRoles.includes(context.role)) {
@@ -134,7 +204,7 @@ export async function requireRole(requestedBusinessId: string, allowedRoles: Rol
 /**
  * Ensures the authenticated user has the required permission for the business context.
  */
-export async function requirePermission(requestedBusinessId: string, permission: Permission): Promise<BusinessContext> {
+export async function requirePermission(requestedBusinessId: string | undefined, permission: Permission): Promise<BusinessContext> {
   const context = await requireBusinessContext(requestedBusinessId);
 
   if (!hasPermission(context.role, permission)) {

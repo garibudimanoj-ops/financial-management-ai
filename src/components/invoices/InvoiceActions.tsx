@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { issueInvoiceAction, refundInvoiceAction } from '@/actions/invoice';
-import { recordPaymentAction } from '@/actions/payment';
+import { PaymentMethod } from '@prisma/client';
+import { issueInvoiceAction, refundInvoiceAction, cancelInvoiceAction } from '@/actions/invoice';
+import { recordPaymentAction, reversePaymentAction } from '@/actions/payment';
 import { serializeInvoice, serializePayment } from '@/lib/serialize';
 import { Prisma } from '@prisma/client';
-import { CheckCircle2, RefreshCw, XCircle, Clock, AlertCircle, Send, CreditCard } from 'lucide-react';
+import { CheckCircle2, RefreshCw, XCircle, Clock, AlertCircle, Send, CreditCard, X } from 'lucide-react';
 
 interface Invoice {
   id: string;
@@ -59,6 +60,8 @@ interface Invoice {
     receivedAt: string | Date;
     createdById: string | null;
     createdAt: string | Date;
+    reversedAt: string | Date | null;
+    reversalReason: string | null;
   }[];
   createdBy: {
     id: string;
@@ -82,10 +85,15 @@ export default function InvoiceActions({ businessId, invoice, currency, currency
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [paymentReference, setPaymentReference] = useState('');
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [reversingPaymentId, setReversingPaymentId] = useState<string | null>(null);
+  const [reverseReason, setReverseReason] = useState('');
 
   const canIssue = invoice.status === 'DRAFT';
   const canRefund = invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED' && invoice.status !== 'REFUNDED';
   const canPay = invoice.status === 'ISSUED' || invoice.status === 'PARTIALLY_PAID';
+  const canCancel = invoice.status === 'DRAFT' || invoice.status === 'ISSUED';
   const balanceDue = Number(invoice.balanceDue);
 
   const handleIssue = async () => {
@@ -121,6 +129,51 @@ export default function InvoiceActions({ businessId, invoice, currency, currency
     }
   };
 
+  const handleCancel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cancelReason.trim()) {
+      setError('A cancellation reason is required');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await cancelInvoiceAction(businessId, {
+        invoiceId: invoice.id,
+        reason: cancelReason.trim(),
+      });
+      setSuccess('Invoice cancelled successfully');
+      setShowCancelConfirm(false);
+      setCancelReason('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel invoice');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReversePayment = async (paymentId: string) => {
+    if (!reverseReason.trim()) {
+      setError('A reversal reason is required');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await reversePaymentAction(businessId, {
+        paymentId,
+        reason: reverseReason.trim(),
+      });
+      setSuccess('Payment reversed successfully');
+      setReversingPaymentId(null);
+      setReverseReason('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reverse payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -137,7 +190,7 @@ export default function InvoiceActions({ businessId, invoice, currency, currency
       await recordPaymentAction(businessId, {
         invoiceId: invoice.id,
         amount,
-        paymentMethod: paymentMethod as any,
+        paymentMethod: paymentMethod as PaymentMethod,
         reference: paymentReference || null,
         idempotencyKey: `payment-${invoice.id}-${Date.now()}`,
       });
@@ -308,6 +361,20 @@ export default function InvoiceActions({ businessId, invoice, currency, currency
             </button>
           )}
 
+          {canCancel && (
+            <button
+              onClick={() => {
+                setError(null);
+                setShowCancelConfirm(true);
+              }}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 rounded-xl text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-50"
+            >
+              <XCircle className="w-4 h-4" />
+              Cancel
+            </button>
+          )}
+
           {canPay && balanceDue > 0 && (
             <button
               onClick={() => setShowPaymentForm(!showPaymentForm)}
@@ -380,22 +447,51 @@ export default function InvoiceActions({ businessId, invoice, currency, currency
           <div className="border-t border-white/10 pt-4">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Payment History</h3>
             <div className="space-y-2">
-              {invoice.payments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl text-sm">
-                  <div>
-                    <p className="font-medium text-white">{payment.paymentMethod}</p>
-                    <p className="text-xs text-gray-400">{new Date(payment.receivedAt).toLocaleString()}</p>
+              {invoice.payments.map((payment) => {
+                const isReversed = !!payment.reversedAt;
+                return (
+                  <div key={payment.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl text-sm">
+                    <div>
+                      <p className="font-medium text-white flex items-center gap-2">
+                        {payment.paymentMethod}
+                        {isReversed && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30">
+                            REVERSED
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(payment.receivedAt).toLocaleString()}
+                        {isReversed && payment.reversalReason ? ` • ${payment.reversalReason}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right flex items-center gap-3">
+                      <div>
+                        <p className="font-bold text-emerald-400 font-mono">
+                          {currencySymbol}{Number(payment.amount).toFixed(2)}
+                        </p>
+                        {payment.reference && (
+                          <p className="text-xs text-gray-400 font-mono">Ref: {payment.reference}</p>
+                        )}
+                      </div>
+                      {!isReversed && invoice.status !== 'CANCELLED' && invoice.status !== 'REFUNDED' && (
+                        <button
+                          onClick={() => {
+                            setError(null);
+                            setReversingPaymentId(payment.id);
+                            setReverseReason('');
+                          }}
+                          disabled={loading}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-950/40 hover:bg-red-900/60 border border-red-500/40 rounded-lg text-xs font-semibold text-red-300 transition-all disabled:opacity-50"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          Reverse
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-emerald-400 font-mono">
-                      {currencySymbol}{Number(payment.amount).toFixed(2)}
-                    </p>
-                    {payment.reference && (
-                      <p className="text-xs text-gray-400 font-mono">Ref: {payment.reference}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -404,6 +500,134 @@ export default function InvoiceActions({ businessId, invoice, currency, currency
           <div className="border-t border-white/10 pt-4">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Notes</h3>
             <p className="text-sm text-gray-300">{invoice.notes}</p>
+          </div>
+        )}
+
+        {/* Cancel Confirmation Modal */}
+        {showCancelConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="glass-card w-full max-w-md p-6 space-y-4 border border-white/20">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <XCircle className="w-5 h-5 text-amber-400" />
+                  Cancel Invoice
+                </h2>
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="p-2 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-300">
+                {invoice.status === 'DRAFT'
+                  ? 'This will void the draft invoice without affecting inventory or the General Ledger.'
+                  : 'This will return stock to inventory, reverse the posted sale journal, and offset the customer receivable.'}
+              </p>
+
+              {invoice.paidAmount && Number(invoice.paidAmount) > 0 && (
+                <div className="p-3 rounded-xl bg-red-900/30 border border-red-500/50 text-red-200 text-xs">
+                  This invoice has recorded payments. Payments must be reversed or refunded before cancellation.
+                </div>
+              )}
+
+              <form onSubmit={handleCancel} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Cancellation Reason *
+                  </label>
+                  <textarea
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    rows={3}
+                    required
+                    placeholder="e.g. Customer cancelled order, duplicate entry"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm resize-none"
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-5 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold text-white shadow-lg transition-all"
+                  >
+                    {loading ? 'Cancelling...' : 'Confirm Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="px-5 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10 transition-all"
+                  >
+                    Keep Invoice
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Reversal Confirmation Modal */}
+        {reversingPaymentId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="glass-card w-full max-w-md p-6 space-y-4 border border-white/20">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5 text-red-400" />
+                  Reverse Payment
+                </h2>
+                <button
+                  onClick={() => setReversingPaymentId(null)}
+                  className="p-2 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-300">
+                This will reverse the posted payment journal, restore the customer&apos;s
+                outstanding balance, and reduce the invoice paid amount. The original
+                payment record is preserved with reversal metadata.
+              </p>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleReversePayment(reversingPaymentId);
+                }}
+                className="space-y-3"
+              >
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                    Reversal Reason *
+                  </label>
+                  <textarea
+                    value={reverseReason}
+                    onChange={(e) => setReverseReason(e.target.value)}
+                    rows={3}
+                    required
+                    placeholder="e.g. Duplicate entry, customer overpayment refund"
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm resize-none"
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-5 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold text-white shadow-lg transition-all"
+                  >
+                    {loading ? 'Reversing...' : 'Confirm Reverse'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReversingPaymentId(null)}
+                    className="px-5 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium text-gray-300 hover:bg-white/10 transition-all"
+                  >
+                    Keep Payment
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>

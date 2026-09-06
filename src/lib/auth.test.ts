@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { requireAuth, requireBusinessContext, requireRole, requirePermission, getUserBusinesses } from './auth';
-import { prisma } from './prisma';
+import { requireAuth, requireBusinessContext, requireRole, requirePermission, getUserBusinesses, syncPrismaUser } from './auth';
+import { prisma } from '@/lib/prisma';
 import { AppError } from './errors';
 
 // Mock Supabase
@@ -22,16 +22,21 @@ vi.mock('next/headers', () => ({
 }));
 
 // Mock Prisma client
-vi.mock('./prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
+    },
+    business: {
+      findUnique: vi.fn(),
     },
     businessMember: {
       findFirst: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
+      upsert: vi.fn(),
     },
   },
 }));
@@ -41,7 +46,7 @@ describe('Auth & Multi-Tenant Helpers', () => {
     vi.resetAllMocks();
     mockGetUser.mockResolvedValue({
       data: {
-        user: { id: 'mock-supabase-id', email: 'test@example.com', user_metadata: { name: 'Test User' } },
+        user: { id: 'real-supabase-uuid-123', email: 'test@example.com', user_metadata: { name: 'Test User' } },
       },
       error: null,
     });
@@ -58,10 +63,10 @@ describe('Auth & Multi-Tenant Helpers', () => {
   });
 
   it('should auto-create application user if user exists in Supabase but not in Prisma', async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.user.create).mockResolvedValueOnce({
       id: 'new-user-id',
-      supabaseUserId: 'mock-supabase-id',
+      supabaseUserId: 'real-supabase-uuid-123',
       email: 'test@example.com',
       name: 'Test User',
       createdAt: new Date(),
@@ -70,13 +75,58 @@ describe('Auth & Multi-Tenant Helpers', () => {
 
     const user = await requireAuth();
     expect(user.id).toBe('new-user-id');
-    expect(prisma.user.create).toHaveBeenCalledTimes(1);
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: {
+        supabaseUserId: 'real-supabase-uuid-123',
+        email: 'test@example.com',
+        name: 'Test User',
+      },
+    });
+  });
+
+  it('should link existing Prisma user by email and update supabaseUserId when real Supabase UUID differs', async () => {
+    // 1st lookup by supabaseUserId -> returns null (placeholder UUID in seed was sub-admin-demo-uuid)
+    // 2nd lookup by email -> returns existing user record
+    vi.mocked(prisma.user.findUnique)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'existing-admin-id',
+        supabaseUserId: 'sub-admin-demo-uuid',
+        email: 'admin@apexglobal.demo',
+        name: 'Priya Sharma (Principal CA)',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+    vi.mocked(prisma.user.update).mockResolvedValueOnce({
+      id: 'existing-admin-id',
+      supabaseUserId: 'real-supabase-uuid-123',
+      email: 'admin@apexglobal.demo',
+      name: 'Priya Sharma (Principal CA)',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const synced = await syncPrismaUser({
+      id: 'real-supabase-uuid-123',
+      email: 'admin@apexglobal.demo',
+      user_metadata: { name: 'Priya Sharma (Principal CA)' },
+    });
+
+    expect(synced.id).toBe('existing-admin-id');
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'existing-admin-id' },
+      data: {
+        supabaseUserId: 'real-supabase-uuid-123',
+        name: 'Priya Sharma (Principal CA)',
+      },
+    });
   });
 
   it('should resolve business context for active member', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'user-123',
-      supabaseUserId: 'mock-supabase-id',
+      supabaseUserId: 'real-supabase-uuid-123',
       email: 'test@example.com',
       name: 'Test User',
       createdAt: new Date(),
@@ -101,10 +151,28 @@ describe('Auth & Multi-Tenant Helpers', () => {
     expect(context.membershipStatus).toBe('ACTIVE');
   });
 
+  it('should strictly reject access when user attempts to access a business where they have no membership (tenant isolation)', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'user-attacker',
+      supabaseUserId: 'real-supabase-uuid-123',
+      email: 'attacker@example.com',
+      name: 'Attacker User',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    // Attacker has membership only in biz-victim-2, but requests biz-target-1
+    vi.mocked(prisma.businessMember.findUnique).mockResolvedValue(null);
+
+    await expect(requireBusinessContext('biz-target-1')).rejects.toThrow(
+      'Forbidden: User is not an active member of this business'
+    );
+  });
+
   it('should throw FORBIDDEN AppError if membership status is not ACTIVE', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'user-123',
-      supabaseUserId: 'mock-supabase-id',
+      supabaseUserId: 'real-supabase-uuid-123',
       email: 'test@example.com',
       name: 'Test User',
       createdAt: new Date(),
@@ -129,7 +197,7 @@ describe('Auth & Multi-Tenant Helpers', () => {
   it('should enforce role restrictions via requireRole', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'user-123',
-      supabaseUserId: 'mock-supabase-id',
+      supabaseUserId: 'real-supabase-uuid-123',
       email: 'test@example.com',
       name: 'Test User',
       createdAt: new Date(),
@@ -159,7 +227,7 @@ describe('Auth & Multi-Tenant Helpers', () => {
   it('should enforce permissions via requirePermission', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'user-123',
-      supabaseUserId: 'mock-supabase-id',
+      supabaseUserId: 'real-supabase-uuid-123',
       email: 'test@example.com',
       name: 'Test User',
       createdAt: new Date(),
@@ -189,7 +257,7 @@ describe('Auth & Multi-Tenant Helpers', () => {
   it('should return active user businesses via getUserBusinesses', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'user-123',
-      supabaseUserId: 'mock-supabase-id',
+      supabaseUserId: 'real-supabase-uuid-123',
       email: 'test@example.com',
       name: 'Test User',
       createdAt: new Date(),

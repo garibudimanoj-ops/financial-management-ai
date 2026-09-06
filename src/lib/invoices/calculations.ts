@@ -1,29 +1,8 @@
 import { Prisma } from '@prisma/client';
 import { toDecimal, DecimalLike } from '@/lib/inventory/valuation';
+import { getTaxRateForCategory } from '@/lib/invoices/tax';
 
-/**
- * Returns the standard tax rate percentage for a given tax category.
- */
-export function getTaxRateForCategory(taxCategory?: string | null): Prisma.Decimal {
-  if (!taxCategory) return new Prisma.Decimal(18);
-
-  switch (taxCategory.toUpperCase()) {
-    case 'GST_5':
-      return new Prisma.Decimal(5);
-    case 'GST_12':
-      return new Prisma.Decimal(12);
-    case 'GST_18':
-    case 'STANDARD':
-      return new Prisma.Decimal(18);
-    case 'GST_28':
-      return new Prisma.Decimal(28);
-    case 'EXEMPT':
-    case 'NIL':
-      return new Prisma.Decimal(0);
-    default:
-      return new Prisma.Decimal(18);
-  }
-}
+export { getTaxRateForCategory } from '@/lib/invoices/tax';
 
 export interface LineItemInput {
   quantity: DecimalLike;
@@ -128,4 +107,27 @@ export function calculateBalanceDue(totalAmount: DecimalLike, paidAmount: Decima
   const total = toDecimal(totalAmount);
   const paid = toDecimal(paidAmount);
   return Prisma.Decimal.max(0, total.minus(paid));
+}
+
+const OPEN_INVOICE_STATUSES = new Set(['ISSUED', 'PARTIALLY_PAID']);
+
+/**
+ * Overdue is a derived display state: an unpaid issued invoice whose due date has passed.
+ * The persisted InvoiceStatus enum does not include OVERDUE.
+ */
+export function isInvoiceOverdue(input: {
+  status: string;
+  dueDate?: Date | string | null;
+  balanceDue?: DecimalLike | null;
+  now?: Date;
+}): boolean {
+  if (!OPEN_INVOICE_STATUSES.has(input.status)) return false;
+  if (!input.dueDate) return false;
+  if (input.balanceDue !== undefined && input.balanceDue !== null && toDecimal(input.balanceDue).lessThanOrEqualTo(0)) {
+    return false;
+  }
+  const due = input.dueDate instanceof Date ? input.dueDate : new Date(input.dueDate);
+  if (Number.isNaN(due.getTime())) return false;
+  const now = input.now ?? new Date();
+  return due.getTime() < now.getTime();
 }

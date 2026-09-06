@@ -4,11 +4,12 @@ import { requirePermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logAuditEvent } from '@/lib/audit';
 import { AppError } from '@/lib/errors';
-import { finalizeSale, refundInvoice } from '@/lib/invoices/service';
+import { finalizeSale, refundInvoice, cancelInvoice } from '@/lib/invoices/service';
 import { recordLedgerEntry } from '@/lib/customers/service';
+import { recordSaleInvoiceJournal } from '@/services/accounting/journalBridge';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, Prisma } from '@prisma/client';
 
 const saleItemSchema = z.object({
   productId: z.string().min(1, 'Product is required'),
@@ -34,6 +35,16 @@ const finalizeSaleSchema = z.object({
       reference: z.string().nullish(),
       notes: z.string().nullish(),
     })
+    .nullish(),
+  initialPayments: z
+    .array(
+      z.object({
+        amount: z.coerce.number().min(0),
+        paymentMethod: z.enum(['CASH', 'CARD', 'UPI', 'BANK_TRANSFER', 'OTHER'] as const),
+        reference: z.string().nullish(),
+        notes: z.string().nullish(),
+      })
+    )
     .nullish(),
 });
 
@@ -62,6 +73,14 @@ export async function finalizeSaleAction(businessId: string, formData: FinalizeS
           reference: parsed.initialPayment.reference,
           notes: parsed.initialPayment.notes,
         }
+      : null,
+    initialPayments: parsed.initialPayments
+      ? parsed.initialPayments.map((p) => ({
+          amount: p.amount,
+          paymentMethod: p.paymentMethod as PaymentMethod,
+          reference: p.reference,
+          notes: p.notes,
+        }))
       : null,
     userId: context.userId,
   });
@@ -99,6 +118,7 @@ export async function issueInvoiceAction(businessId: string, invoiceId: string) 
     }
 
     // Verify stock and deduct inventory
+    let totalCostOfGoods = new Prisma.Decimal(0);
     for (const item of invoice.items) {
       if (!item.productId) continue;
 
@@ -117,6 +137,7 @@ export async function issueInvoiceAction(businessId: string, invoiceId: string) 
         );
       }
 
+      totalCostOfGoods = totalCostOfGoods.plus(product.costPrice.mul(item.quantity));
       const previousStock = product.stockQuantity;
       const resultingStock = previousStock.minus(item.quantity);
 
@@ -164,6 +185,20 @@ export async function issueInvoiceAction(businessId: string, invoiceId: string) 
       });
     }
 
+    // General Ledger integration: Post double-entry journal
+    await recordSaleInvoiceJournal(tx, {
+      businessId,
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      subtotal: invoice.subtotal,
+      discountAmount: invoice.discountAmount,
+      taxAmount: invoice.taxAmount,
+      totalAmount: invoice.totalAmount,
+      totalCostOfGoods,
+      initialPaid: invoice.paidAmount,
+      userId: context.userId,
+    });
+
     return updatedInvoice;
   }).then(async (result) => {
     await logAuditEvent({
@@ -205,6 +240,39 @@ export async function refundInvoiceAction(businessId: string, formData: RefundIn
     businessId,
     invoiceId: parsed.invoiceId,
     returnStockToInventory: parsed.returnStockToInventory,
+    reason: parsed.reason,
+    userId: context.userId,
+  });
+
+  revalidatePath('/invoices');
+  revalidatePath(`/invoices/${parsed.invoiceId}`);
+  revalidatePath('/products');
+  revalidatePath('/inventory');
+  revalidatePath('/customers');
+  revalidatePath('/dashboard');
+
+  return result;
+}
+
+const cancelInvoiceSchema = z.object({
+  invoiceId: z.string().min(1, 'Invoice is required'),
+  reason: z.string().min(1, 'Cancellation reason is required'),
+});
+
+export type CancelInvoiceFormData = z.input<typeof cancelInvoiceSchema>;
+
+/**
+ * Cancels an invoice. Drafts are voided immediately; unpaid issued invoices have
+ * stock restored and their sale journal reversed. Paid/partially paid invoices
+ * must have their payments reversed or refunded before they can be cancelled.
+ */
+export async function cancelInvoiceAction(businessId: string, formData: CancelInvoiceFormData) {
+  const context = await requirePermission(businessId, 'INVOICES_MANAGE');
+  const parsed = cancelInvoiceSchema.parse(formData);
+
+  const result = await cancelInvoice({
+    businessId,
+    invoiceId: parsed.invoiceId,
     reason: parsed.reason,
     userId: context.userId,
   });

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
 import { logAuditEvent } from '@/lib/audit';
+import { syncPrismaUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
@@ -27,18 +28,9 @@ export async function login(formData: z.infer<typeof authSchema>) {
     throw new Error(error.message);
   }
 
-  let user = await prisma.user.findUnique({
-    where: { supabaseUserId: data.user.id },
-  });
+  const user = await syncPrismaUser(data.user);
 
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        supabaseUserId: data.user.id,
-        email: data.user.email!,
-      },
-    });
-  }
+  console.log(`[Auth Login] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id} | Email: ${user.email}`);
 
   await logAuditEvent({
     action: 'USER_LOGIN',
@@ -74,12 +66,9 @@ export async function signup(formData: z.infer<typeof authSchema>) {
   }
 
   if (data.user) {
-    const user = await prisma.user.create({
-      data: {
-        supabaseUserId: data.user.id,
-        email: data.user.email!,
-      },
-    });
+    const user = await syncPrismaUser(data.user);
+
+    console.log(`[Auth Signup] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id} | Email: ${user.email}`);
 
     await logAuditEvent({
       action: 'USER_SIGNUP',

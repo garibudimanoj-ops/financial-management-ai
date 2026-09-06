@@ -1,7 +1,7 @@
 'use server';
 
 import { requirePermission } from '@/lib/auth';
-import { recordInvoicePayment } from '@/lib/invoices/service';
+import { recordInvoicePayment, reversePayment } from '@/lib/invoices/service';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { PaymentMethod } from '@prisma/client';
@@ -37,6 +37,40 @@ export async function recordPaymentAction(businessId: string, formData: RecordPa
 
   revalidatePath('/invoices');
   revalidatePath(`/invoices/${parsed.invoiceId}`);
+  revalidatePath('/payments');
+  revalidatePath('/customers');
+  revalidatePath('/dashboard');
+
+  return result;
+}
+
+const reversePaymentSchema = z.object({
+  paymentId: z.string().min(1, 'Payment is required'),
+  reason: z.string().min(1, 'Reversal reason is required'),
+});
+
+export type ReversePaymentFormData = z.input<typeof reversePaymentSchema>;
+
+/**
+ * Server action to reverse a previously recorded invoice payment.
+ *
+ * Reverses the customer ledger, the General Ledger payment journal, the invoice
+ * paidAmount/status, and marks the original payment as reversed. Paid/partially
+ * paid invoices remain cancellable only after their payments have been reversed.
+ */
+export async function reversePaymentAction(businessId: string, formData: ReversePaymentFormData) {
+  const context = await requirePermission(businessId, 'INVOICES_MANAGE');
+  const parsed = reversePaymentSchema.parse(formData);
+
+  const result = await reversePayment({
+    businessId,
+    paymentId: parsed.paymentId,
+    reason: parsed.reason,
+    userId: context.userId,
+  });
+
+  revalidatePath('/invoices');
+  revalidatePath(`/invoices/${result.invoice.id}`);
   revalidatePath('/payments');
   revalidatePath('/customers');
   revalidatePath('/dashboard');

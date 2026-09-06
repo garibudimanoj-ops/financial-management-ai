@@ -36,6 +36,14 @@ enum InvoiceStatus {
   REFUNDED
 }
 
+enum PurchaseBillStatus {
+  DRAFT
+  RECEIVED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
 enum PaymentMethod {
   CASH
   CARD
@@ -55,20 +63,26 @@ enum LedgerEntryType {
 }
 
 model User {
-  id                 String                @id @default(cuid())
-  supabaseUserId     String                @unique
-  email              String                @unique
-  name               String?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  memberships        BusinessMember[]
-  invitations        BusinessInvitation[]
-  auditLogs          AuditLog[]
-  createdProducts    Product[]             @relation("ProductCreatedBy")
-  inventoryMovements InventoryMovement[]  @relation("MovementCreatedBy")
-  createdInvoices    Invoice[]             @relation("InvoiceCreatedBy")
-  createdPayments    Payment[]             @relation("PaymentCreatedBy")
+  id                   String                @id @default(cuid())
+  supabaseUserId       String                @unique
+  email                String                @unique
+  name                 String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  memberships          BusinessMember[]
+  invitations          BusinessInvitation[]
+  auditLogs            AuditLog[]
+  createdProducts      Product[]             @relation("ProductCreatedBy")
+  inventoryMovements   InventoryMovement[]   @relation("MovementCreatedBy")
+  createdInvoices      Invoice[]             @relation("InvoiceCreatedBy")
+  createdPayments      Payment[]             @relation("PaymentCreatedBy")
+  reversedPayments     Payment[]             @relation("PaymentReversedBy")
   createdLedgerEntries CustomerLedgerEntry[] @relation("LedgerCreatedBy")
+  createdTransactions  Transaction[]         @relation("TransactionCreatedBy")
+  createdSuppliers     Supplier[]            @relation("SupplierCreatedBy")
+  createdPurchaseBills PurchaseBill[]        @relation("PurchaseCreatedBy")
+  createdPurchasePayments PurchasePayment[]  @relation("PurchasePaymentCreatedBy")
+  createdExpenses      Expense[]             @relation("ExpenseCreatedBy")
 }
 
 model Business {
@@ -96,6 +110,16 @@ model Business {
   payments              Payment[]
   ledgerEntries         CustomerLedgerEntry[]
   invoiceSequence       InvoiceSequence?
+  accounts              Account[]
+  transactions          Transaction[]
+  suppliers             Supplier[]
+  purchaseBills         PurchaseBill[]
+  purchasePayments      PurchasePayment[]
+  expenseCategories     ExpenseCategory[]
+  expenses              Expense[]
+  purchaseSequence      PurchaseSequence?
+  expenseSequence       ExpenseSequence?
+  transactionSequence   TransactionSequence?
 }
 
 model BusinessMember {
@@ -177,6 +201,7 @@ model Product {
   batches           InventoryBatch[]
   movements         InventoryMovement[]
   invoiceItems      InvoiceItem[]
+  purchaseItems     PurchaseBillItem[]
 
   @@unique([businessId, SKU])
   @@unique([businessId, barcode])
@@ -373,15 +398,308 @@ model Payment {
   createdById    String?
   createdAt      DateTime              @default(now())
 
+  // Reversal metadata. Nullable: a payment is reversible only until it has been reversed.
+  reversedAt     DateTime?
+  reversedById   String?
+  reversalReason String?
+
   business       Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
   invoice        Invoice?              @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   customer       Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
   ledgerEntries  CustomerLedgerEntry[]
   createdBy      User?                 @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  reversedBy     User?                 @relation("PaymentReversedBy", fields: [reversedById], references: [id], onDelete: SetNull)
 
   @@unique([businessId, idempotencyKey])
   @@index([businessId])
   @@index([invoiceId])
   @@index([customerId])
   @@index([businessId, createdAt])
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum TransactionStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+model Account {
+  id          String      @id @default(cuid())
+  businessId  String
+  code        String
+  name        String
+  type        AccountType
+  category    String?
+  currency    String      @default("INR")
+  balance     Decimal     @default(0) @db.Decimal(15, 2)
+  isActive    Boolean     @default(true)
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  entries          Entry[]
+  expenseCategories ExpenseCategory[]
+  expenses         Expense[]
+
+  @@unique([businessId, code])
+  @@index([businessId])
+  @@index([businessId, type])
+}
+
+model Transaction {
+  id                  String            @id @default(cuid())
+  businessId          String
+  transactionNumber   String
+  date                DateTime          @default(now())
+  description         String
+  reference           String?
+  sourceType          String?
+  sourceId            String?
+  reversalOfId        String?
+  status              TransactionStatus @default(POSTED)
+  requiresHumanReview Boolean           @default(false)
+  verifiedStatus      String            @default("VERIFIED")
+  createdById         String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  business            Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy           User?             @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  entries             Entry[]
+
+  @@unique([businessId, transactionNumber])
+  @@index([businessId])
+  @@index([businessId, date])
+  @@index([businessId, status])
+  @@index([businessId, sourceType, sourceId])
+  @@index([reversalOfId])
+}
+
+model Entry {
+  id            String      @id @default(cuid())
+  transactionId String
+  accountId     String
+  debit         Decimal     @default(0) @db.Decimal(15, 2)
+  credit        Decimal     @default(0) @db.Decimal(15, 2)
+  description   String?
+  createdAt     DateTime    @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  account       Account     @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([transactionId])
+  @@index([accountId])
+}
+
+model Supplier {
+  id               String            @id @default(cuid())
+  businessId       String
+  name             String
+  contactPerson    String?
+  email            String?
+  phone            String?
+  gstin            String?
+  pan              String?
+  address          String?
+  city             String?
+  state            String?
+  pincode          String?
+  paymentTerms     String?           @default("DUE_ON_RECEIPT")
+  creditLimit      Decimal?          @db.Decimal(15, 2)
+  currentBalance   Decimal           @default(0) @db.Decimal(15, 2)
+  archived         Boolean           @default(false)
+  notes            String?
+  createdById      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  business         Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy        User?             @relation("SupplierCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  purchaseBills    PurchaseBill[]
+  purchasePayments PurchasePayment[]
+  expenses         Expense[]
+
+  @@index([businessId])
+  @@index([businessId, name])
+  @@index([businessId, archived])
+}
+
+model PurchaseBill {
+  id                    String              @id @default(cuid())
+  businessId            String
+  supplierId            String
+  billNumber            String
+  supplierInvoiceNumber String?
+  status                PurchaseBillStatus  @default(RECEIVED)
+  billDate              DateTime            @default(now())
+  dueDate               DateTime?
+  subtotal              Decimal             @default(0) @db.Decimal(15, 2)
+  discountAmount        Decimal             @default(0) @db.Decimal(15, 2)
+  taxAmount             Decimal             @default(0) @db.Decimal(15, 2)
+  cgstAmount            Decimal             @default(0) @db.Decimal(15, 2)
+  sgstAmount            Decimal             @default(0) @db.Decimal(15, 2)
+  igstAmount            Decimal             @default(0) @db.Decimal(15, 2)
+  totalAmount           Decimal             @default(0) @db.Decimal(15, 2)
+  paidAmount            Decimal             @default(0) @db.Decimal(15, 2)
+  balanceDue            Decimal             @default(0) @db.Decimal(15, 2)
+  notes                 String?
+  idempotencyKey        String?
+  createdById           String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  business              Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  supplier              Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy             User?               @relation("PurchaseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  items                 PurchaseBillItem[]
+  payments              PurchasePayment[]
+
+  @@unique([businessId, billNumber])
+  @@unique([businessId, idempotencyKey])
+  @@index([businessId])
+  @@index([supplierId])
+  @@index([businessId, status])
+  @@index([businessId, billDate])
+}
+
+model PurchaseBillItem {
+  id                  String       @id @default(cuid())
+  billId              String
+  productId           String?
+  productNameSnapshot String
+  skuSnapshot         String?
+  unitSnapshot        String?
+  quantity            Decimal      @db.Decimal(15, 4)
+  unitCost            Decimal      @db.Decimal(15, 2)
+  discount            Decimal      @default(0) @db.Decimal(15, 2)
+  taxRate             Decimal      @default(0) @db.Decimal(5, 2)
+  taxAmount           Decimal      @default(0) @db.Decimal(15, 2)
+  lineSubtotal        Decimal      @db.Decimal(15, 2)
+  lineTotal           Decimal      @db.Decimal(15, 2)
+  createdAt           DateTime     @default(now())
+
+  bill                PurchaseBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  product             Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([billId])
+  @@index([productId])
+}
+
+model PurchasePayment {
+  id             String        @id @default(cuid())
+  businessId     String
+  billId         String?
+  supplierId     String
+  amount         Decimal       @db.Decimal(15, 2)
+  paymentMethod  PaymentMethod @default(BANK_TRANSFER)
+  paymentDate    DateTime      @default(now())
+  reference      String?
+  notes          String?
+  idempotencyKey String?
+  createdById    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  business       Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bill           PurchaseBill? @relation(fields: [billId], references: [id], onDelete: SetNull)
+  supplier       Supplier      @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy      User?         @relation("PurchasePaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, idempotencyKey])
+  @@index([businessId])
+  @@index([billId])
+  @@index([supplierId])
+  @@index([businessId, paymentDate])
+}
+
+model ExpenseCategory {
+  id               String    @id @default(cuid())
+  businessId       String
+  name             String
+  code             String?
+  defaultAccountId String?
+  description      String?
+  isTaxDeductible  Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  defaultAccount   Account?  @relation(fields: [defaultAccountId], references: [id], onDelete: SetNull)
+  expenses         Expense[]
+
+  @@unique([businessId, name])
+  @@index([businessId])
+}
+
+model Expense {
+  id             String           @id @default(cuid())
+  businessId     String
+  expenseNumber  String
+  categoryId     String?
+  accountId      String
+  supplierId     String?
+  payeeName      String
+  amount         Decimal          @db.Decimal(15, 2)
+  taxRate        Decimal          @default(0) @db.Decimal(5, 2)
+  taxAmount      Decimal          @default(0) @db.Decimal(15, 2)
+  totalAmount    Decimal          @db.Decimal(15, 2)
+  paymentMethod  PaymentMethod    @default(BANK_TRANSFER)
+  paymentStatus  String           @default("PAID") // PAID, PENDING, CANCELLED
+  expenseDate    DateTime         @default(now())
+  reference      String?
+  receiptUrl     String?
+  notes          String?
+  createdById    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  business       Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category       ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  account        Account          @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  supplier       Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  createdBy      User?            @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, expenseNumber])
+  @@index([businessId])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([businessId, expenseDate])
+}
+
+model PurchaseSequence {
+  id            String   @id @default(cuid())
+  businessId    String   @unique
+  currentNumber Int      @default(0)
+  prefix        String   @default("BILL")
+  updatedAt     DateTime @updatedAt
+
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model ExpenseSequence {
+  id            String   @id @default(cuid())
+  businessId    String   @unique
+  currentNumber Int      @default(0)
+  prefix        String   @default("EXP")
+  updatedAt     DateTime @updatedAt
+
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model TransactionSequence {
+  id            String   @id @default(cuid())
+  businessId    String   @unique
+  currentNumber Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 }

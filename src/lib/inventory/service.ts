@@ -242,7 +242,7 @@ export async function getInventorySummary(businessId: string) {
     },
   });
 
-  let totalProducts = products.length;
+  const totalProducts = products.length;
   let totalUnits = new Prisma.Decimal(0);
   let totalValuation = new Prisma.Decimal(0);
   let lowStockCount = 0;
@@ -305,5 +305,5 @@ export async function getInventoryMovements(businessId: string, productId?: stri
     }),
   ]);
 
-  return { total, movements: movements.map(serializeInventoryMovement) as any[] };
+  return { total, movements: movements.map(serializeInventoryMovement) };
 }

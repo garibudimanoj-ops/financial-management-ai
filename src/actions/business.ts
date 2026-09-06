@@ -4,6 +4,7 @@ import { requireAuth, requirePermission, requireBusinessContext } from '@/lib/au
 import { prisma } from '@/lib/prisma';
 import { logAuditEvent } from '@/lib/audit';
 import { AppError } from '@/lib/errors';
+import { initializeChartOfAccounts } from '@/services/accounting/accountService';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
@@ -53,6 +54,9 @@ export async function onboardBusiness(formData: z.infer<typeof onboardingSchema>
         status: 'ACTIVE',
       },
     });
+
+    // Auto-provision standard Chart of Accounts for new business
+    await initializeChartOfAccounts(business.id, tx, business.baseCurrency);
 
     return { business, member };
   });

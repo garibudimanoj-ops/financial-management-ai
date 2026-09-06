@@ -41,8 +41,8 @@ export default async function POSPage() {
       businessId={context.businessId}
       businessName={business?.name || 'POS'}
       currency={business?.baseCurrency || 'INR'}
-      products={serializedProducts as any}
-      customers={serializedCustomers as any}
+      products={serializedProducts}
+      customers={serializedCustomers}
     />
   );
 }
