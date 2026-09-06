@@ -6,6 +6,15 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { Prisma } from '@prisma/client';
+
+type DraftTransactionResponse = Prisma.TransactionGetPayload<{
+  include: {
+    entries: {
+      include: { account: true };
+    };
+  };
+}>;
 
 /**
  * POST /api/ai/ingest
@@ -36,7 +45,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const draftProposal = await orchestrateDocumentToDraftTransaction(parsedDoc, isInterState);
 
   // 4. Save as Draft Transaction in General Ledger if saveDraft is requested (default true)
-  let savedDraft: any = null;
+  let savedDraft: DraftTransactionResponse | null = null;
   if (body.saveDraft !== false) {
     // Map account codes to actual accounts for this business
     const accounts = await prisma.account.findMany({

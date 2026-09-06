@@ -1,5 +1,5 @@
 import { computeTaxBreakdown } from './computationEngine';
-import { AIOrchestrationResult, ParsedDocumentResult } from '@/types/ai';
+import { AIOrchestrationResult, CalculationResult, ParsedDocumentResult } from '@/types/ai';
 
 export interface DraftTransactionProposal {
   description: string;
@@ -12,7 +12,7 @@ export interface DraftTransactionProposal {
     credit: string;
   }>;
   totalAmount: string;
-  taxBreakdown?: any;
+  taxBreakdown?: CalculationResult;
 }
 
 /**

@@ -47,7 +47,7 @@ export interface CalculationResult {
   verification_status: 'VERIFIED';
 }
 
-export interface AIOrchestrationResult<T = any> {
+export interface AIOrchestrationResult<T = unknown> {
   data: T;
   verified_sources: string[];
   verification_status: VerificationStatus;

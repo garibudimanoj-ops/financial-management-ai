@@ -678,7 +678,7 @@ describe('Report Service — Tenant Isolation', () => {
     expect(findManySpy).toHaveBeenCalled();
 
     const callArgs =
-      findManySpy.mock.calls[0]?.[0];
+      (findManySpy.mock.calls[0] as unknown as Array<unknown>)[0];
 
     expect(callArgs).toBeDefined();
 
@@ -715,7 +715,7 @@ describe('Report Service — Tenant Isolation', () => {
     expect(findManySpy).toHaveBeenCalled();
 
     const callArgs =
-      findManySpy.mock.calls[0]?.[0];
+      (findManySpy.mock.calls[0] as unknown as Array<unknown>)[0];
 
     expect(callArgs).toBeDefined();
 
@@ -752,7 +752,7 @@ describe('Report Service — Tenant Isolation', () => {
     expect(findManySpy).toHaveBeenCalled();
 
     const callArgs =
-      findManySpy.mock.calls[0]?.[0];
+      (findManySpy.mock.calls[0] as unknown as Array<unknown>)[0];
 
     expect(callArgs).toBeDefined();
 

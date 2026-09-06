@@ -32,7 +32,7 @@ export default async function PurchaseBillPayPage({ params }: PurchaseBillPayPag
 
   const currency = business?.baseCurrency || 'INR';
   const symbol = currency === 'INR' ? '₹' : '$';
-  const fmt = (v: any) => v != null ? symbol + Number(v).toFixed(2) : symbol + '0.00';
+  const fmt = (v: { toString(): string } | string | number | null | undefined) => v != null ? symbol + Number(v).toFixed(2) : symbol + '0.00';
   const totalPaid = bill.payments.reduce((s, p) => s + Number(p.amount), 0);
   const balanceDue = Number(bill.totalAmount) - totalPaid;
   const today = new Date().toISOString().split('T')[0];

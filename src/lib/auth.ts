@@ -26,7 +26,7 @@ export interface BusinessContext {
 export async function syncPrismaUser(supabaseUser: {
   id: string;
   email?: string | null;
-  user_metadata?: Record<string, any> | null;
+  user_metadata?: Record<string, unknown> | null;
 }): Promise<User> {
   const email = supabaseUser.email;
   if (!email) {
@@ -50,7 +50,7 @@ export async function syncPrismaUser(supabaseUser: {
         where: { id: user.id },
         data: {
           supabaseUserId: supabaseUser.id,
-          name: supabaseUser.user_metadata?.name || user.name,
+          name: typeof supabaseUser.user_metadata?.name === 'string' ? supabaseUser.user_metadata.name : user.name,
         },
       });
       console.log(`[Auth Sync] Linked existing Prisma User ID: ${user.id} to Supabase User ID: ${supabaseUser.id}`);
@@ -63,7 +63,7 @@ export async function syncPrismaUser(supabaseUser: {
       data: {
         supabaseUserId: supabaseUser.id,
         email,
-        name: supabaseUser.user_metadata?.name || null,
+        name: typeof supabaseUser.user_metadata?.name === 'string' ? supabaseUser.user_metadata.name : null,
       },
     });
     console.log(`[Auth Sync] Created new Prisma User ID: ${user.id} for Supabase User ID: ${supabaseUser.id}`);

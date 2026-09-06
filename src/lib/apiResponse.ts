@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { AppError } from './errors';
 
 export interface StructuredErrorResponse {
@@ -11,11 +11,17 @@ export interface StructuredErrorResponse {
  * Defensive error-handling wrapper for Next.js API route handlers.
  * Catches known AppErrors and unexpected exceptions, returning uniform structured JSON.
  */
-export function withErrorHandling<T extends (...args: any[]) => Promise<Response | NextResponse>>(handler: T): T {
-  return (async (...args: any[]) => {
+type RouteContext<P = unknown> = { params: Promise<P> };
+type RouteHandler<P = unknown> = (
+  req: NextRequest,
+  ctx?: RouteContext<P>
+) => Promise<Response | NextResponse>;
+
+export function withErrorHandling<T extends RouteHandler>(handler: T): T {
+  return (async (req: NextRequest, ctx?: RouteContext) => {
     try {
-      return await handler(...args);
-    } catch (err: any) {
+      return await handler(req, ctx);
+    } catch (err: unknown) {
       console.error('API Error:', err);
 
       if (err instanceof AppError) {
@@ -30,18 +36,19 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<Response
       }
 
       // Handle Prisma errors
-      if (err?.code && typeof err.code === 'string' && err.code.startsWith('P')) {
+      if (err && typeof err === 'object' && 'code' in err && typeof (err as { code: unknown }).code === 'string' && (err as { code: string }).code.startsWith('P')) {
+        const prismaErr = err as { code: string; message?: string };
         return NextResponse.json(
           {
             error: 'Database operation failed',
-            code: err.code,
-            details: process.env.NODE_ENV === 'development' ? err.message : undefined,
+            code: prismaErr.code,
+            details: process.env.NODE_ENV === 'development' ? prismaErr.message : undefined,
           } as StructuredErrorResponse,
           { status: 500 }
         );
       }
 
-      const errorMessage = err?.message || 'Internal Server Error';
+      const errorMessage = err instanceof Error ? err.message : 'Internal Server Error';
       return NextResponse.json(
         {
           error: errorMessage,

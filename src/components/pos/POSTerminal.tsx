@@ -79,6 +79,7 @@ export default function POSTerminal({ businessId, businessName, currency, produc
   const [stockError, setStockError] = useState<string | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProductCache(products);
   }, [products]);
 
@@ -364,7 +365,7 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
         initialPayments,
       });
 
-      setSuccess(`Sale completed! Invoice #${(result as any).invoiceNumber}`);
+      setSuccess(`Sale completed! Invoice #${result.invoiceNumber}`);
       setCart([]);
       setSelectedCustomerId(null);
       setInvoiceDiscount(0);

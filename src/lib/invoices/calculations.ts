@@ -1,29 +1,8 @@
 import { Prisma } from '@prisma/client';
 import { toDecimal, DecimalLike } from '@/lib/inventory/valuation';
+import { getTaxRateForCategory } from '@/lib/invoices/tax';
 
-/**
- * Returns the standard tax rate percentage for a given tax category.
- */
-export function getTaxRateForCategory(taxCategory?: string | null): Prisma.Decimal {
-  if (!taxCategory) return new Prisma.Decimal(18);
-
-  switch (taxCategory.toUpperCase()) {
-    case 'GST_5':
-      return new Prisma.Decimal(5);
-    case 'GST_12':
-      return new Prisma.Decimal(12);
-    case 'GST_18':
-    case 'STANDARD':
-      return new Prisma.Decimal(18);
-    case 'GST_28':
-      return new Prisma.Decimal(28);
-    case 'EXEMPT':
-    case 'NIL':
-      return new Prisma.Decimal(0);
-    default:
-      return new Prisma.Decimal(18);
-  }
-}
+export { getTaxRateForCategory } from '@/lib/invoices/tax';
 
 export interface LineItemInput {
   quantity: DecimalLike;

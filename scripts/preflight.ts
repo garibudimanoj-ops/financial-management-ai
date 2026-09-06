@@ -58,8 +58,9 @@ async function runPreflight() {
       client.release();
       await pool.end();
       console.log('  ✅ Database connection successful!');
-    } catch (err: any) {
-      console.warn(`  ⚠️ Database connection warning: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`  ⚠️ Database connection warning: ${message}`);
       console.warn('  Note: Ensure PostgreSQL is running if you intend to perform live database queries.');
       await pool.end();
     }

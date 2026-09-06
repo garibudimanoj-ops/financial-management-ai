@@ -19,11 +19,11 @@ import {
 
 export function serializeDecimal(value: null | undefined): null;
 export function serializeDecimal(value: Prisma.Decimal | number | string): string;
-export function serializeDecimal(value: any): string | null;
-export function serializeDecimal(value: any): string | null {
+export function serializeDecimal(value: Prisma.Decimal | number | string | null | undefined): string | null;
+export function serializeDecimal(value: Prisma.Decimal | number | string | null | undefined): string | null {
   if (value === null || value === undefined) return null;
-  if (typeof value === 'object' && 'toJSON' in value && typeof (value as any).toJSON === 'function') {
-    return (value as any).toJSON();
+  if (typeof value === 'object' && 'toJSON' in value && typeof value.toJSON === 'function') {
+    return String(value.toJSON());
   }
   return String(value);
 }
@@ -126,10 +126,10 @@ export function serializeProduct(product: Product) {
     barcode: product.barcode,
     category: product.category,
     unit: product.unit,
-    costPrice: serializeDecimal(product.costPrice as any),
-    sellingPrice: serializeDecimal(product.sellingPrice as any),
-    stockQuantity: serializeDecimal(product.stockQuantity as any),
-    lowStockThreshold: serializeDecimal(product.lowStockThreshold as any),
+    costPrice: serializeDecimal(product.costPrice),
+    sellingPrice: serializeDecimal(product.sellingPrice),
+    stockQuantity: serializeDecimal(product.stockQuantity),
+    lowStockThreshold: serializeDecimal(product.lowStockThreshold),
     taxCategory: product.taxCategory,
     archived: product.archived,
     createdById: product.createdById,
@@ -150,10 +150,10 @@ export function serializeInventoryMovement(movement: InventoryMovement & {
     productId: movement.productId,
     batchId: movement.batchId,
     movementType: movement.movementType,
-    quantity: serializeDecimal(movement.quantity as any),
-    unitCost: serializeDecimal(movement.unitCost as any),
-    previousStock: serializeDecimal(movement.previousStock as any),
-    resultingStock: serializeDecimal(movement.resultingStock as any),
+    quantity: serializeDecimal(movement.quantity),
+    unitCost: serializeDecimal(movement.unitCost),
+    previousStock: serializeDecimal(movement.previousStock),
+    resultingStock: serializeDecimal(movement.resultingStock),
     reason: movement.reason,
     reference: movement.reference,
     createdById: movement.createdById,
@@ -177,12 +177,12 @@ export function serializeInvoice(invoice: Invoice & {
     status: invoice.status,
     issueDate: serializeDate(invoice.issueDate),
     dueDate: serializeDate(invoice.dueDate),
-    subtotal: serializeDecimal(invoice.subtotal as any),
-    discountAmount: serializeDecimal(invoice.discountAmount as any),
-    taxAmount: serializeDecimal(invoice.taxAmount as any),
-    totalAmount: serializeDecimal(invoice.totalAmount as any),
-    paidAmount: serializeDecimal(invoice.paidAmount as any),
-    balanceDue: serializeDecimal(invoice.balanceDue as any),
+    subtotal: serializeDecimal(invoice.subtotal),
+    discountAmount: serializeDecimal(invoice.discountAmount),
+    taxAmount: serializeDecimal(invoice.taxAmount),
+    totalAmount: serializeDecimal(invoice.totalAmount),
+    paidAmount: serializeDecimal(invoice.paidAmount),
+    balanceDue: serializeDecimal(invoice.balanceDue),
     notes: invoice.notes,
     idempotencyKey: invoice.idempotencyKey,
     createdById: invoice.createdById,
@@ -218,14 +218,14 @@ export function serializeInvoiceItem(item: InvoiceItem) {
     productNameSnapshot: item.productNameSnapshot,
     skuSnapshot: item.skuSnapshot,
     unitSnapshot: item.unitSnapshot,
-    quantity: serializeDecimal(item.quantity as any),
-    unitPrice: serializeDecimal(item.unitPrice as any),
-    unitCostSnapshot: serializeDecimal(item.unitCostSnapshot as any),
-    discount: serializeDecimal(item.discount as any),
-    taxRate: serializeDecimal(item.taxRate as any),
-    taxAmount: serializeDecimal(item.taxAmount as any),
-    lineSubtotal: serializeDecimal(item.lineSubtotal as any),
-    lineTotal: serializeDecimal(item.lineTotal as any),
+    quantity: serializeDecimal(item.quantity),
+    unitPrice: serializeDecimal(item.unitPrice),
+    unitCostSnapshot: serializeDecimal(item.unitCostSnapshot),
+    discount: serializeDecimal(item.discount),
+    taxRate: serializeDecimal(item.taxRate),
+    taxAmount: serializeDecimal(item.taxAmount),
+    lineSubtotal: serializeDecimal(item.lineSubtotal),
+    lineTotal: serializeDecimal(item.lineTotal),
   };
 }
 
@@ -235,7 +235,7 @@ export function serializePayment(payment: Payment) {
     businessId: payment.businessId,
     invoiceId: payment.invoiceId,
     customerId: payment.customerId,
-    amount: serializeDecimal(payment.amount as any),
+    amount: serializeDecimal(payment.amount),
     paymentMethod: payment.paymentMethod,
     reference: payment.reference,
     notes: payment.notes,
@@ -279,9 +279,9 @@ export function serializeCustomer(customer: Customer) {
     country: customer.country,
     taxId: customer.taxId,
     notes: customer.notes,
-    creditLimit: serializeDecimal(customer.creditLimit as any),
-    openingBalance: serializeDecimal(customer.openingBalance as any),
-    currentBalance: serializeDecimal(customer.currentBalance as any),
+    creditLimit: serializeDecimal(customer.creditLimit),
+    openingBalance: serializeDecimal(customer.openingBalance),
+    currentBalance: serializeDecimal(customer.currentBalance),
     archived: customer.archived,
     createdAt: serializeDate(customer.createdAt),
     updatedAt: serializeDate(customer.updatedAt),
@@ -300,8 +300,8 @@ export function serializeCustomerLedgerEntry(entry: CustomerLedgerEntry & {
     invoiceId: entry.invoiceId,
     paymentId: entry.paymentId,
     entryType: entry.entryType,
-    amount: serializeDecimal(entry.amount as any),
-    balanceAfter: serializeDecimal(entry.balanceAfter as any),
+    amount: serializeDecimal(entry.amount),
+    balanceAfter: serializeDecimal(entry.balanceAfter),
     description: entry.description,
     reference: entry.reference,
     createdById: entry.createdById,
@@ -329,8 +329,8 @@ export function serializeSupplier(supplier: Supplier) {
     state: supplier.state,
     pincode: supplier.pincode,
     paymentTerms: supplier.paymentTerms,
-    creditLimit: serializeDecimal(supplier.creditLimit as any),
-    currentBalance: serializeDecimal(supplier.currentBalance as any),
+    creditLimit: serializeDecimal(supplier.creditLimit),
+    currentBalance: serializeDecimal(supplier.currentBalance),
     archived: supplier.archived,
     notes: supplier.notes,
     createdById: supplier.createdById,
@@ -347,13 +347,13 @@ export function serializePurchaseBillItem(item: PurchaseBillItem) {
     productNameSnapshot: item.productNameSnapshot,
     skuSnapshot: item.skuSnapshot,
     unitSnapshot: item.unitSnapshot,
-    quantity: serializeDecimal(item.quantity as any),
-    unitCost: serializeDecimal(item.unitCost as any),
-    discount: serializeDecimal(item.discount as any),
-    taxRate: serializeDecimal(item.taxRate as any),
-    taxAmount: serializeDecimal(item.taxAmount as any),
-    lineSubtotal: serializeDecimal(item.lineSubtotal as any),
-    lineTotal: serializeDecimal(item.lineTotal as any),
+    quantity: serializeDecimal(item.quantity),
+    unitCost: serializeDecimal(item.unitCost),
+    discount: serializeDecimal(item.discount),
+    taxRate: serializeDecimal(item.taxRate),
+    taxAmount: serializeDecimal(item.taxAmount),
+    lineSubtotal: serializeDecimal(item.lineSubtotal),
+    lineTotal: serializeDecimal(item.lineTotal),
     createdAt: serializeDate(item.createdAt),
   };
 }
@@ -373,15 +373,15 @@ export function serializePurchaseBill(bill: PurchaseBill & {
     status: bill.status,
     billDate: serializeDate(bill.billDate),
     dueDate: serializeDate(bill.dueDate),
-    subtotal: serializeDecimal(bill.subtotal as any),
-    discountAmount: serializeDecimal(bill.discountAmount as any),
-    taxAmount: serializeDecimal(bill.taxAmount as any),
-    cgstAmount: serializeDecimal(bill.cgstAmount as any),
-    sgstAmount: serializeDecimal(bill.sgstAmount as any),
-    igstAmount: serializeDecimal(bill.igstAmount as any),
-    totalAmount: serializeDecimal(bill.totalAmount as any),
-    paidAmount: serializeDecimal(bill.paidAmount as any),
-    balanceDue: serializeDecimal(bill.balanceDue as any),
+    subtotal: serializeDecimal(bill.subtotal),
+    discountAmount: serializeDecimal(bill.discountAmount),
+    taxAmount: serializeDecimal(bill.taxAmount),
+    cgstAmount: serializeDecimal(bill.cgstAmount),
+    sgstAmount: serializeDecimal(bill.sgstAmount),
+    igstAmount: serializeDecimal(bill.igstAmount),
+    totalAmount: serializeDecimal(bill.totalAmount),
+    paidAmount: serializeDecimal(bill.paidAmount),
+    balanceDue: serializeDecimal(bill.balanceDue),
     notes: bill.notes,
     idempotencyKey: bill.idempotencyKey,
     createdById: bill.createdById,
@@ -412,7 +412,7 @@ export function serializePurchasePayment(payment: PurchasePayment & {
     businessId: payment.businessId,
     billId: payment.billId,
     supplierId: payment.supplierId,
-    amount: serializeDecimal(payment.amount as any),
+    amount: serializeDecimal(payment.amount),
     paymentMethod: payment.paymentMethod,
     paymentDate: serializeDate(payment.paymentDate),
     reference: payment.reference,
@@ -441,10 +441,10 @@ export function serializeExpense(expense: Expense & {
     accountId: expense.accountId,
     supplierId: expense.supplierId,
     payeeName: expense.payeeName,
-    amount: serializeDecimal(expense.amount as any),
-    taxRate: serializeDecimal(expense.taxRate as any),
-    taxAmount: serializeDecimal(expense.taxAmount as any),
-    totalAmount: serializeDecimal(expense.totalAmount as any),
+    amount: serializeDecimal(expense.amount),
+    taxRate: serializeDecimal(expense.taxRate),
+    taxAmount: serializeDecimal(expense.taxAmount),
+    totalAmount: serializeDecimal(expense.totalAmount),
     paymentMethod: expense.paymentMethod,
     paymentStatus: expense.paymentStatus,
     expenseDate: serializeDate(expense.expenseDate),
@@ -467,9 +467,9 @@ export function serializeInventoryBatch(batch: InventoryBatch) {
     businessId: batch.businessId,
     productId: batch.productId,
     batchNumber: batch.batchNumber,
-    quantity: serializeDecimal(batch.quantity as any),
-    remainingQuantity: serializeDecimal(batch.remainingQuantity as any),
-    unitCost: serializeDecimal(batch.unitCost as any),
+    quantity: serializeDecimal(batch.quantity),
+    remainingQuantity: serializeDecimal(batch.remainingQuantity),
+    unitCost: serializeDecimal(batch.unitCost),
     receivedDate: serializeDate(batch.receivedDate),
     expiryDate: serializeDate(batch.expiryDate),
     createdAt: serializeDate(batch.createdAt),
@@ -495,25 +495,40 @@ export function serializeBusiness(business: Business) {
   };
 }
 
+export interface AuditLogDetails {
+  [key: string]: unknown;
+}
+
 export interface AuditLogSummary {
   id: string;
   businessId: string | null;
   userId: string | null;
   action: string;
-  details: any;
+  details: AuditLogDetails | null;
   ipAddress: string | null;
   createdAt: string | null;
   user?: { id: string; email: string; name: string | null } | null;
 }
 
-export function serializeAuditLog(log: any): AuditLogSummary {
+export interface AuditLogInput {
+  id: string;
+  businessId: string | null;
+  userId: string | null;
+  action: string;
+  details?: AuditLogDetails | null;
+  ipAddress?: string | null;
+  createdAt?: Date | string | null;
+  user?: { id: string; email: string; name: string | null } | null;
+}
+
+export function serializeAuditLog(log: AuditLogInput): AuditLogSummary {
   return {
     id: log.id,
     businessId: log.businessId,
     userId: log.userId,
     action: log.action,
     details: log.details ?? null,
-    ipAddress: log.ipAddress,
+    ipAddress: log.ipAddress ?? null,
     createdAt: serializeDate(log.createdAt),
     user: log.user
       ? { id: log.user.id, email: log.user.email, name: log.user.name }
@@ -532,7 +547,18 @@ export interface MemberSummary {
   user: { id: string; email: string; name: string | null };
 }
 
-export function serializeMember(member: any): MemberSummary {
+export interface MemberInput {
+  id: string;
+  businessId: string;
+  userId: string;
+  role: string;
+  status: string;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  user: { id: string; email: string; name: string | null };
+}
+
+export function serializeMember(member: MemberInput): MemberSummary {
   return {
     id: member.id,
     businessId: member.businessId,
@@ -549,6 +575,19 @@ export function serializeMember(member: any): MemberSummary {
   };
 }
 
+export interface InvitationInput {
+  id: string;
+  businessId: string;
+  email: string;
+  role: string;
+  status: string;
+  invitedById: string;
+  invitedUserId?: string | null;
+  expiresAt?: Date | string | null;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+}
+
 export interface InvitationSummary {
   id: string;
   businessId: string;
@@ -562,7 +601,7 @@ export interface InvitationSummary {
   updatedAt: string | null;
 }
 
-export function serializeInvitation(inv: any): InvitationSummary {
+export function serializeInvitation(inv: InvitationInput): InvitationSummary {
   return {
     id: inv.id,
     businessId: inv.businessId,
@@ -570,7 +609,7 @@ export function serializeInvitation(inv: any): InvitationSummary {
     role: inv.role,
     status: inv.status,
     invitedById: inv.invitedById,
-    invitedUserId: inv.invitedUserId,
+    invitedUserId: inv.invitedUserId ?? null,
     expiresAt: serializeDate(inv.expiresAt),
     createdAt: serializeDate(inv.createdAt),
     updatedAt: serializeDate(inv.updatedAt),

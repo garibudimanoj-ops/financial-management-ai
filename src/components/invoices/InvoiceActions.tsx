@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PaymentMethod } from '@prisma/client';
 import { issueInvoiceAction, refundInvoiceAction, cancelInvoiceAction } from '@/actions/invoice';
 import { recordPaymentAction, reversePaymentAction } from '@/actions/payment';
 import { serializeInvoice, serializePayment } from '@/lib/serialize';
@@ -189,7 +190,7 @@ export default function InvoiceActions({ businessId, invoice, currency, currency
       await recordPaymentAction(businessId, {
         invoiceId: invoice.id,
         amount,
-        paymentMethod: paymentMethod as any,
+        paymentMethod: paymentMethod as PaymentMethod,
         reference: paymentReference || null,
         idempotencyKey: `payment-${invoice.id}-${Date.now()}`,
       });
@@ -584,7 +585,7 @@ export default function InvoiceActions({ businessId, invoice, currency, currency
               </div>
 
               <p className="text-sm text-gray-300">
-                This will reverse the posted payment journal, restore the customer's
+                This will reverse the posted payment journal, restore the customer&apos;s
                 outstanding balance, and reduce the invoice paid amount. The original
                 payment record is preserved with reversal metadata.
               </p>

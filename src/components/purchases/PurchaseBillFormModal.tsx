@@ -73,7 +73,7 @@ export default function PurchaseBillFormModal({ businessId, suppliers, products,
     }
   };
 
-  const handleItemChange = (index: number, field: keyof PurchaseItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof PurchaseItem, value: PurchaseItem[keyof PurchaseItem]) => {
     setItems(items.map((item, i) => i === index ? { ...item, [field]: value } : item));
   };
 
@@ -118,8 +118,9 @@ export default function PurchaseBillFormModal({ businessId, suppliers, products,
       });
       setOpen(false);
       window.location.reload();
-    } catch (err: any) {
-      setError(err.message || 'Failed to create purchase bill');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create purchase bill';
+      setError(message);
     } finally {
       setLoading(false);
     }

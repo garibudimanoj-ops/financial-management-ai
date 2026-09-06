@@ -56,7 +56,14 @@ const makeTx = () => ({
     create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
       const t = { id: `txn-${mockState.createdTransactions.length + 1}`, ...data, entries: (data.entries as { create: unknown[] }).create };
       mockState.createdTransactions.push(t);
-      return { ...t, entries: (data.entries as { create: unknown[] }).create.map((e, i) => ({ ...e, id: `entry-${i}`, account: makeAccounts().find((a) => a.id === (e as { accountId: string }).accountId) })) };
+      return {
+        ...t,
+        entries: (data.entries as { create: Record<string, unknown>[] }).create.map((e, i) => ({
+          ...e,
+          id: `entry-${i}`,
+          account: makeAccounts().find((a) => a.id === (e as { accountId: string }).accountId)
+        }))
+      };
     }),
   },
 });

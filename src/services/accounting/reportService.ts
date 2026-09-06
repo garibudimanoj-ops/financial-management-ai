@@ -59,7 +59,7 @@ export async function getTrialBalance(businessId: string): Promise<TrialBalanceR
       accountId: acc.id,
       accountCode: acc.code,
       accountName: acc.name,
-      accountType: acc.type as any,
+      accountType: acc.type,
       totalDebit: accDebit.toString(),
       totalCredit: accCredit.toString(),
       netDebit: netDebit.toString(),

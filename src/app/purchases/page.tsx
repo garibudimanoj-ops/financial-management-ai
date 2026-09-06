@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { requireBusinessContext, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { serializePurchaseBill } from '@/lib/serialize';
@@ -34,7 +35,7 @@ export default async function PurchasesPage({
     }),
   ]);
 
-  const where: Record<string, any> = {
+  const where: Prisma.PurchaseBillWhereInput = {
     businessId: context.businessId,
     ...(search.trim() !== ''
       ? {
@@ -45,7 +46,7 @@ export default async function PurchasesPage({
           ],
         }
       : {}),
-    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(statusFilter ? { status: statusFilter as import('@prisma/client').PurchaseBillStatus } : {}),
     ...(supplierFilter ? { supplierId: supplierFilter } : {}),
   };
 
@@ -105,7 +106,7 @@ export default async function PurchasesPage({
         </div>
 
         <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium">This Month's Purchases</span>
+          <span className="text-xs text-gray-400 font-medium">This Month&apos;s Purchases</span>
           <p className="text-3xl font-extrabold text-indigo-400 font-mono">{fmt(totalThisMonth)}</p>
           <span className="text-[11px] text-gray-500 block">Total purchase volume</span>
         </div>

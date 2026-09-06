@@ -45,8 +45,8 @@ export default function SupplierFormModal({ businessId }: { businessId: string }
       });
 
       setOpen(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create supplier');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create supplier');
     } finally {
       setLoading(false);
     }

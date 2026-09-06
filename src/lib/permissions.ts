@@ -61,7 +61,8 @@ export type Permission =
   | 'REPORT_READ'
   | 'REPORT_EXPORT'
   | 'AI_FINANCIAL_READ'
-  | 'AUDIT_READ';
+  | 'AUDIT_READ'
+  | 'CA_ASSISTANT';
 
 // Central mapping of default permissions per role
 export const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
@@ -85,7 +86,7 @@ export const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
     'EXPENSES_VIEW', 'EXPENSES_MANAGE',
     'PROFIT_READ', 'TAX_READ',
     'REPORT_READ', 'REPORT_EXPORT',
-    'AI_FINANCIAL_READ', 'AUDIT_READ'
+    'AI_FINANCIAL_READ', 'AUDIT_READ', 'CA_ASSISTANT'
   ]),
   ADMIN: new Set<Permission>([
     'BUSINESS_READ', 'BUSINESS_UPDATE',
@@ -107,7 +108,7 @@ export const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
     'EXPENSES_VIEW', 'EXPENSES_MANAGE',
     'PROFIT_READ', 'TAX_READ',
     'REPORT_READ', 'REPORT_EXPORT',
-    'AI_FINANCIAL_READ', 'AUDIT_READ'
+    'AI_FINANCIAL_READ', 'AUDIT_READ', 'CA_ASSISTANT'
   ]),
   STAFF: new Set<Permission>([
     'BUSINESS_READ',
@@ -126,7 +127,7 @@ export const ROLE_PERMISSIONS: Record<Role, Set<Permission>> = {
     'PURCHASES_VIEW',
     'PAYMENTS_VIEW', 'PAYMENTS_CREATE',
     'EXPENSE_READ', 'EXPENSE_CREATE',
-    'EXPENSES_VIEW'
+    'EXPENSES_VIEW', 'CA_ASSISTANT'
   ])
 };
 

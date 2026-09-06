@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { AppError } from '@/lib/errors';
-import { CreateTransactionDTO, TransactionDTO } from '@/types/accounting';
+import { CreateTransactionDTO, TransactionDTO, TransactionStatus } from '@/types/accounting';
 
 function toDecimal(val: string | number | Prisma.Decimal): Prisma.Decimal {
   if (val instanceof Prisma.Decimal) return val;
@@ -155,7 +155,7 @@ export async function createTransaction(input: CreateTransactionDTO): Promise<Tr
       date: createdTxn.date,
       description: createdTxn.description,
       reference: createdTxn.reference,
-      status: createdTxn.status as any,
+      status: createdTxn.status,
       requiresHumanReview: createdTxn.requiresHumanReview,
       verifiedStatus: createdTxn.verifiedStatus,
       totalAmount: totalDebit.toString(),
@@ -168,7 +168,7 @@ export async function createTransaction(input: CreateTransactionDTO): Promise<Tr
           businessId: e.account.businessId,
           code: e.account.code,
           name: e.account.name,
-          type: e.account.type as any,
+          type: e.account.type,
           category: e.account.category,
           currency: e.account.currency,
           balance: e.account.balance.toString(),
@@ -215,7 +215,7 @@ export async function getTransactionById(businessId: string, transactionId: stri
     date: txn.date,
     description: txn.description,
     reference: txn.reference,
-    status: txn.status as any,
+    status: txn.status,
     requiresHumanReview: txn.requiresHumanReview,
     verifiedStatus: txn.verifiedStatus,
     totalAmount: totalDebit.toString(),
@@ -228,7 +228,7 @@ export async function getTransactionById(businessId: string, transactionId: stri
         businessId: e.account.businessId,
         code: e.account.code,
         name: e.account.name,
-        type: e.account.type as any,
+        type: e.account.type,
         category: e.account.category,
         currency: e.account.currency,
         balance: e.account.balance.toString(),
@@ -257,7 +257,7 @@ export async function listTransactions(
   const offset = options.offset || 0;
   const where: Prisma.TransactionWhereInput = {
     businessId,
-    ...(options.status ? { status: options.status as any } : {}),
+    ...(options.status ? { status: options.status as TransactionStatus } : {}),
   };
 
   const [total, transactions] = await Promise.all([
@@ -288,7 +288,7 @@ export async function listTransactions(
         date: txn.date,
         description: txn.description,
         reference: txn.reference,
-        status: txn.status as any,
+    status: txn.status,
         requiresHumanReview: txn.requiresHumanReview,
         verifiedStatus: txn.verifiedStatus,
         totalAmount: totalDebit.toString(),

@@ -1,0 +1,54 @@
+import { requireBusinessContext, hasPermission } from '@/lib/auth';
+import { Link } from 'lucide-react';
+
+export default async function CAAssistantPage() {
+  const context = await requireBusinessContext();
+  const canAccess = hasPermission(context.role, 'CA_ASSISTANT');
+
+  if (!canAccess) {
+    return (
+      <div className="min-h-screen p-6 max-w-5xl mx-auto flex items-center justify-center">
+        <div className="glass-card p-8 text-center space-y-4">
+          <h1 className="text-2xl font-bold text-red-400">Access Restricted</h1>
+          <p className="text-gray-400">CA Assistant is not available for this role or workspace.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen p-6 max-w-5xl mx-auto space-y-8">
+      <div className="border-b border-white/10 pb-6">
+        <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
+          <Link className="w-8 h-8 text-indigo-400" />
+          CA Assistant
+        </h1>
+        <p className="text-gray-400 text-sm mt-2">
+          AI assistant for financial questions. Not a replacement for a qualified Chartered Accountant.
+        </p>
+        <div className="mt-3 text-xs text-amber-400 bg-amber-900/20 border border-amber-500/30 rounded-lg px-3 py-2 inline-block">
+          Disclaimer: General guidance only. Not legal or tax advice. Always review before relying.
+        </div>
+      </div>
+
+      <div className="glass-card p-6 space-y-6">
+        <div className="h-[60vh] overflow-y-auto space-y-4" id="chat-container">
+          <div className="text-sm text-gray-500">Ask questions like:&quot;What are my total sales this month?&quot; or &quot;Create a draft invoice...&quot;</div>
+        </div>
+        <form className="flex gap-3" onSubmit={(e) => { e.preventDefault(); }}>
+          <input
+            type="text"
+            placeholder="Type your question..."
+            className="flex-1 glass-input px-4 py-3 rounded-xl text-sm"
+          />
+          <button
+            type="submit"
+            className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold text-white transition-all"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
