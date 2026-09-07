@@ -52,13 +52,13 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       where: { businessId },
     });
 
-    const accountMap = new Map(accounts.map((a) => [a.code, a.id]));
+    const accountMap = new Map<string, string>(accounts.map((a: { code: string; id: string }) => [a.code, a.id]));
 
     // Find or fallback to primary accounts
     const entriesData: Array<{ accountId: string; debit: string; credit: string; description?: string }> = [];
 
     for (const entry of draftProposal.data.entries) {
-      let accountId = accountMap.get(entry.accountCode);
+      let accountId: string | undefined = accountMap.get(entry.accountCode);
       if (!accountId) {
         // Fallback to first asset or liability account if specific code not present
         const fallback = accounts[0];
