@@ -49,5 +49,9 @@
     "tsx": "^4.23.13",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.1",
+    "mysql2": "^3.23.1"
   }
 }
