@@ -56,9 +56,14 @@ export async function signup(formData: z.infer<typeof authSchema>) {
   const supabase = await createClient();
   const parsed = authSchema.parse(formData);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
   const { data, error } = await supabase.auth.signUp({
     email: parsed.email,
     password: parsed.password,
+    options: {
+      emailRedirectTo: `${siteUrl}/login`,
+    },
   });
 
   if (error) {
@@ -73,11 +78,15 @@ export async function signup(formData: z.infer<typeof authSchema>) {
     await logAuditEvent({
       action: 'USER_SIGNUP',
       userId: user.id,
-      details: { email: user.email },
+      details: { email: user.email, requiresConfirmation: !data.session },
     });
   }
 
-  redirect('/onboarding');
+  if (data.session) {
+    redirect('/onboarding');
+  } else {
+    redirect('/login?message=check-email');
+  }
 }
 
 /**
@@ -114,13 +123,22 @@ export async function requestPasswordReset(formData: z.infer<typeof resetRequest
   const supabase = await createClient();
   const parsed = resetRequestSchema.parse(formData);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
+  // Temporary diagnostic logging for CI/debugging (no secrets logged)
+  const redirectTarget = `${siteUrl}/reset-password`;
+  console.log(`[Auth Reset Request] URL base: ${siteUrl}; redirect target: ${redirectTarget}`);
+
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/reset-password`,
+    redirectTo: `${siteUrl}/reset-password`,
   });
 
   if (error) {
+    console.log(`[Auth Reset Request] Supabase error: ${error.message} (code: ${error.status || 'N/A'})`);
     throw new Error(error.message);
   }
+
+  console.log(`[Auth Reset Request] Success for email: ${parsed.email}`);
 }
 
 const updatePasswordSchema = z.object({
@@ -134,13 +152,20 @@ export async function updatePassword(formData: z.infer<typeof updatePasswordSche
   const supabase = await createClient();
   const parsed = updatePasswordSchema.parse(formData);
 
+  // Check recovery session status for diagnostics
+  const { data: sessionData } = await supabase.auth.getSession();
+  console.log(`[Auth Update Password] Session exists: ${!!sessionData?.session}; recovery context: ${sessionData?.session?.access_token ? 'present' : 'missing'}`);
+
   const { error } = await supabase.auth.updateUser({
     password: parsed.password,
   });
 
   if (error) {
+    console.log(`[Auth Update Password] Supabase error: ${error.message}`);
     throw new Error(error.message);
   }
+
+  console.log(`[Auth Update Password] Password updated successfully for user.`);
 
   redirect('/login');
 }
