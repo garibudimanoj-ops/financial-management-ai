@@ -1,0 +1,96 @@
+{
+  "timestamp": "2026-09-17T16:21:30.903Z",
+  "base_url": "http://localhost:3000",
+  "results": {
+    "VERIFIED": [
+      {
+        "name": "page-signup",
+        "status": "PAGE_LOADED",
+        "title": "Create Next App",
+        "url": "http://localhost:3000/signup",
+        "bodyContains": "Get Started"
+      },
+      {
+        "name": "page-login",
+        "status": "PAGE_LOADED",
+        "title": "Create Next App",
+        "url": "http://localhost:3000/login",
+        "bodyContains": "Welcome Back"
+      },
+      {
+        "name": "page-forgot-password",
+        "status": "PAGE_LOADED",
+        "title": "Create Next App",
+        "url": "http://localhost:3000/forgot-password",
+        "bodyContains": "Reset Password"
+      },
+      {
+        "name": "page-reset-password",
+        "status": "PAGE_LOADED",
+        "title": "Create Next App",
+        "url": "http://localhost:3000/reset-password",
+        "bodyContains": "Update Password"
+      }
+    ],
+    "FAILED": [],
+    "NEEDS_VALIDATION": [
+      {
+        "name": "protected-dashboard",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "protected-ca-assistant",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "protected-audit-logs",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "protected-invoices",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "protected-settings",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "error-404",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "page-onboarding",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "ca-assistant-ui",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "audit-log-ui",
+        "status": "REDIRECTED_TO_LOGIN",
+        "url": "http://localhost:3000/login"
+      },
+      {
+        "name": "responsive-mobile-dashboard",
+        "status": "VIEWPORT_CHECK",
+        "title": "Create Next App"
+      },
+      {
+        "name": "logout-no-session",
+        "status": "NOT_AUTHENTICATED"
+      }
+    ]
+  },
+  "total_verified": 4,
+  "total_failed": 0,
+  "total_needs_validation": 11
+}

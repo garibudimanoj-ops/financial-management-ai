@@ -6,7 +6,11 @@ import { AppError } from '@/lib/errors';
 
 function escapeCSV(value: unknown): string {
   if (value === null || value === undefined) return '';
-  const str = String(value);
+  let str = String(value);
+  // Prevent formula injection: prepend tab if value starts with =, +, -, @
+  if (/^[=+\-@]/.test(str)) {
+    str = '\t' + str;
+  }
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
     return `"${str.replace(/"/g, '""')}"`;
   }

@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
+  const rateKey = `auth-callback:${clientIp}`;
+  const isAllowed = checkRateLimit(rateKey, 30, 60000); // 30 callbacks per minute
+  if (!isAllowed) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const nextPath = requestUrl.searchParams.get('next') || '/';

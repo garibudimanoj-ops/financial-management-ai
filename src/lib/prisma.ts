@@ -13,16 +13,15 @@ if (!rawConnectionString) {
   throw new Error('DATABASE_URL is not set. Check your .env file.');
 }
 
-// Remove sslmode=require because the local Node/pg environment
-// rejects the Supabase certificate chain.
 const connectionUrl = new URL(rawConnectionString);
-connectionUrl.searchParams.delete('sslmode');
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 const pool = new Pool({
   connectionString: connectionUrl.toString(),
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: isProduction
+    ? { rejectUnauthorized: true }
+    : { rejectUnauthorized: false },
 });
 
 const adapter = new PrismaPg(pool);

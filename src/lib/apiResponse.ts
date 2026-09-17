@@ -48,7 +48,13 @@ export function withErrorHandling<T extends RouteHandler>(handler: T): T {
         );
       }
 
-      const errorMessage = err instanceof Error ? err.message : 'Internal Server Error';
+      const isProd = process.env.NODE_ENV === 'production';
+
+      const errorMessage = isProd
+        ? 'Internal Server Error'
+        : err instanceof Error
+          ? err.message
+          : 'Internal Server Error';
       return NextResponse.json(
         {
           error: errorMessage,

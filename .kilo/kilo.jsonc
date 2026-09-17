@@ -1,0 +1,144 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "auto_collapse_reasoning": false,
+  "terminal_command_display": "expanded",
+  "permission": {
+    "read": {
+      "*": "allow",
+      "*.env": "ask",
+      "*.env.*": "ask",
+      "*.env.example": "allow",
+      "~/.config/kilo/gsd-core/*": "allow"
+    },
+    "edit": "ask",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "bash": {
+      "*": "ask",
+      "cat *": "allow",
+      "head *": "allow",
+      "tail *": "allow",
+      "less *": "allow",
+      "ls *": "allow",
+      "tree *": "allow",
+      "pwd *": "allow",
+      "echo *": "allow",
+      "wc *": "allow",
+      "which *": "allow",
+      "type *": "allow",
+      "file *": "allow",
+      "diff *": "allow",
+      "du *": "allow",
+      "df *": "allow",
+      "date *": "allow",
+      "uname *": "allow",
+      "whoami *": "allow",
+      "printenv *": "allow",
+      "man *": "allow",
+      "grep *": "allow",
+      "rg *": "allow",
+      "ag *": "allow",
+      "uniq *": "allow",
+      "cut *": "allow",
+      "tr *": "allow",
+      "jq *": "allow",
+      "*>*": "ask"
+    },
+    "external_directory": {
+      "~/.config/kilo/gsd-core/*": "allow"
+    },
+    "question": "allow",
+    "webfetch": "allow",
+    "websearch": "allow",
+    "doom_loop": "ask",
+    "codesearch": "allow"
+  },
+  "disabled_providers": [],
+  "provider": {
+    "ollama-local": {
+      "name": "Ollama Local",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://127.0.0.1:20128/v1"
+      },
+      "models": {
+        "qwen2.5-coder:7b": {
+          "name": "Qwen2.5 Coder 7B"
+        }
+      }
+    },
+    "omniroute-local": {
+      "name": "OmniRoute Local",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://127.0.0.1:20128/v1"
+      },
+      "models": {
+        "ollama-local/qwen2.5-coder:7b": {
+          "name": "Qwen 2.5 Coder 7B Local"
+        }
+      }
+    }
+  },
+  "agent": {
+    "debug": {
+      "model": "kilo/liquid/lfm-2.5-2.6b:free"
+    },
+    "code": {
+      "model": "kilo/thinkingmachines/inkling-small:free"
+    }
+  },
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": [
+        "cmd",
+        "/c",
+        "npx",
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": true,
+      "timeout": 10000
+    },
+    "chrome-devtools": {
+      "type": "local",
+      "command": [
+        "cmd",
+        "/c",
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ],
+      "enabled": true,
+      "timeout": 10000
+    },
+    "supabase": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp?project_ref=wnjbvmftgmneiccknoqt&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching",
+      "enabled": true,
+      "timeout": 15000
+    },
+    "composio": {
+      "type": "remote",
+      "url": "https://connect.composio.dev/mcp",
+      "headers": {
+        "x-consumer-api-key": "{env:ck_Ahzdxhcoa-XxGXV0oaDE}"
+      },
+      "enabled": true,
+      "timeout": 15000
+    },
+    "sentry": {
+      "type": "remote",
+      "url": "https://mcp.sentry.dev/mcp",
+      "enabled": true,
+      "timeout": 15000
+    }
+  }
+}

@@ -6,6 +6,7 @@ import { logAuditEvent } from '@/lib/audit';
 import { syncPrismaUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -16,8 +17,15 @@ const authSchema = z.object({
  * Log in using email/password.
  */
 export async function login(formData: z.infer<typeof authSchema>) {
-  const supabase = await createClient();
   const parsed = authSchema.parse(formData);
+
+  const rateKey = `login:${parsed.email}`;
+  const isAllowed = checkRateLimit(rateKey, 5, 15 * 60000); // 5 attempts per 15 minutes
+  if (!isAllowed) {
+    throw new Error('Too many login attempts. Please try again later.');
+  }
+
+  const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: parsed.email,
@@ -25,7 +33,8 @@ export async function login(formData: z.infer<typeof authSchema>) {
   });
 
   if (error) {
-    throw new Error(error.message);
+    console.error('[Auth Login] Supabase error:', error.message);
+    throw new Error('Invalid email or password.');
   }
 
   const user = await syncPrismaUser(data.user);
@@ -53,8 +62,15 @@ export async function login(formData: z.infer<typeof authSchema>) {
  * Sign up using email/password.
  */
 export async function signup(formData: z.infer<typeof authSchema>) {
-  const supabase = await createClient();
   const parsed = authSchema.parse(formData);
+
+  const rateKey = `signup:${parsed.email}`;
+  const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000); // 3 signups per hour
+  if (!isAllowed) {
+    throw new Error('Too many sign-up attempts. Please try again later.');
+  }
+
+  const supabase = await createClient();
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
@@ -67,7 +83,8 @@ export async function signup(formData: z.infer<typeof authSchema>) {
   });
 
   if (error) {
-    throw new Error(error.message);
+    console.error('[Auth Signup] Supabase error:', error.message);
+    throw new Error('Unable to create account. Please try again.');
   }
 
   if (data.user) {
@@ -120,8 +137,15 @@ const resetRequestSchema = z.object({
  * Request password reset email.
  */
 export async function requestPasswordReset(formData: z.infer<typeof resetRequestSchema>) {
-  const supabase = await createClient();
   const parsed = resetRequestSchema.parse(formData);
+
+  const rateKey = `password-reset:${parsed.email}`;
+  const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000); // 3 reset requests per hour
+  if (!isAllowed) {
+    throw new Error('Too many password reset requests. Please try again later.');
+  }
+
+  const supabase = await createClient();
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
@@ -134,8 +158,9 @@ export async function requestPasswordReset(formData: z.infer<typeof resetRequest
   });
 
   if (error) {
-    console.log(`[Auth Reset Request] Supabase error: ${error.message} (code: ${error.status || 'N/A'})`);
-    throw new Error(error.message);
+    console.error('[Auth Reset Request] Supabase error:', error.message);
+    // Return generic message to avoid email enumeration
+    throw new Error('If the email exists, a reset link has been sent.');
   }
 
   console.log(`[Auth Reset Request] Success for email: ${parsed.email}`);
@@ -149,11 +174,22 @@ const updatePasswordSchema = z.object({
  * Update password (after reset).
  */
 export async function updatePassword(formData: z.infer<typeof updatePasswordSchema>) {
-  const supabase = await createClient();
   const parsed = updatePasswordSchema.parse(formData);
+
+  const supabase = await createClient();
 
   // Check recovery session status for diagnostics
   const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData?.session?.user?.id) {
+    throw new Error('A valid recovery session is required to update your password.');
+  }
+
+  const rateKey = `password-update:${sessionData.session.user.id}`;
+  const isAllowed = checkRateLimit(rateKey, 10, 60 * 60000); // 10 attempts per hour
+  if (!isAllowed) {
+    throw new Error('Too many password update attempts. Please try again later.');
+  }
+
   console.log(`[Auth Update Password] Session exists: ${!!sessionData?.session}; recovery context: ${sessionData?.session?.access_token ? 'present' : 'missing'}`);
 
   const { error } = await supabase.auth.updateUser({
@@ -161,8 +197,8 @@ export async function updatePassword(formData: z.infer<typeof updatePasswordSche
   });
 
   if (error) {
-    console.log(`[Auth Update Password] Supabase error: ${error.message}`);
-    throw new Error(error.message);
+    console.error('[Auth Update Password] Supabase error:', error.message);
+    throw new Error('Unable to update password. Please try again.');
   }
 
   console.log(`[Auth Update Password] Password updated successfully for user.`);
