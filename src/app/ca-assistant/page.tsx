@@ -1,5 +1,7 @@
 import { requireBusinessContext, hasPermission } from '@/lib/auth';
 import CAAssistantClient from '@/components/ca-assistant/CAAssistantClient';
+import PageHeader from '@/components/ui/PageHeader';
+import { BotMessageSquare, AlertCircle } from 'lucide-react';
 
 export default async function CAAssistantPage() {
   const context = await requireBusinessContext();
@@ -7,26 +9,33 @@ export default async function CAAssistantPage() {
 
   if (!canAccess) {
     return (
-      <div className="min-h-screen p-6 max-w-5xl mx-auto flex items-center justify-center">
-        <div className="glass-card p-8 text-center space-y-4">
-          <h1 className="text-2xl font-bold text-red-400">Access Restricted</h1>
-          <p className="text-gray-400">CA Assistant is not available for this role or workspace.</p>
+      <div className="max-w-4xl mx-auto py-16 flex items-center justify-center">
+        <div className="glass-card p-8 text-center space-y-4 max-w-md">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6 text-red-400" />
+          </div>
+          <h1 className="text-xl font-bold text-white">Access Restricted</h1>
+          <p className="text-sm text-slate-400">
+            CA Assistant is not enabled for your assigned role or workspace permissions.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6 max-w-5xl mx-auto space-y-8">
-      <div className="border-b border-white/10 pb-6">
-        <h1 className="text-3xl font-extrabold text-white">CA Assistant</h1>
-        <p className="text-gray-400 text-sm mt-2">
-          AI assistant for financial questions. Not a replacement for a qualified Chartered Accountant.
-        </p>
-        <div className="mt-3 text-xs text-amber-400 bg-amber-900/20 border border-amber-500/30 rounded-lg px-3 py-2 inline-block">
-          Disclaimer: General guidance only. Not legal or tax advice. Confirm all draft actions before posting.
-        </div>
+    <div className="space-y-6 max-w-5xl mx-auto">
+      <PageHeader
+        title="CA Assistant & Financial Copilot"
+        subtitle="Conversational financial intelligence engine for ledger inquiries, GST calculations, and draft transactions."
+        icon={<BotMessageSquare className="w-6 h-6 text-indigo-400" />}
+      />
+
+      <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-indigo-300 flex items-center gap-2">
+        <span className="font-semibold uppercase tracking-wider text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-200">Advisory Disclaimer</span>
+        <span>General guidance only. Not a replacement for a certified Chartered Accountant. Action drafts require explicit confirmation before posting to the ledger.</span>
       </div>
+
       <CAAssistantClient businessId={context.businessId} role={context.role} />
     </div>
   );

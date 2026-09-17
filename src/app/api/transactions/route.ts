@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { withErrorHandling, jsonResponse } from '@/lib/apiResponse';
 import { createTransaction, listTransactions } from '@/services/accounting/transactionService';
 import { requirePermission, requireRole } from '@/lib/auth';
+import { extractBusinessId } from '@/lib/utils';
 
 /**
  * POST /api/transactions
@@ -11,7 +12,7 @@ import { requirePermission, requireRole } from '@/lib/auth';
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const body = await req.json();
 
-  const requestedBusinessId = body.businessId || body.companyId;
+  const { businessId: requestedBusinessId } = extractBusinessId(req, body);
   const context = await requireRole(requestedBusinessId, ['OWNER', 'ADMIN']);
 
   const transaction = await createTransaction({
@@ -28,11 +29,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
  * Retrieves transactions for a business.
  */
 export const GET = withErrorHandling(async (req: NextRequest) => {
-  const { searchParams } = new URL(req.url);
-  const requestedBusinessId = searchParams.get('businessId') || searchParams.get('companyId') || undefined;
-  const status = searchParams.get('status') || undefined;
-  const limit = parseInt(searchParams.get('limit') || '50', 10);
-  const offset = parseInt(searchParams.get('offset') || '0', 10);
+  const { businessId: requestedBusinessId } = extractBusinessId(req);
+  const status = new URL(req.url).searchParams.get('status') || undefined;
+  const limit = parseInt(new URL(req.url).searchParams.get('limit') || '50', 10);
+  const offset = parseInt(new URL(req.url).searchParams.get('offset') || '0', 10);
 
   const context = await requirePermission(requestedBusinessId, 'REPORT_READ');
 

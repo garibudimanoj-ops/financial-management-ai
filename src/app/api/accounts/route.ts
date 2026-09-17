@@ -4,14 +4,14 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission, requireRole } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 import { AccountType } from '@prisma/client';
+import { extractBusinessId } from '@/lib/utils';
 
 /**
  * GET /api/accounts
  * Lists chart of accounts for a business.
  */
 export const GET = withErrorHandling(async (req: NextRequest) => {
-  const { searchParams } = new URL(req.url);
-  const requestedBusinessId = searchParams.get('businessId') || searchParams.get('companyId') || undefined;
+  const { businessId: requestedBusinessId } = extractBusinessId(req);
   const context = await requirePermission(requestedBusinessId, 'REPORT_READ');
   const businessId = context.businessId;
 

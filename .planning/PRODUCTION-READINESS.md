@@ -205,3 +205,47 @@ No automated baseline command failed. No browser console errors or failed networ
 | **Fix 3** | CSV formula injection | `src/app/api/reports/export/route.ts`, `src/app/api/reports/export/route.test.ts` (new) | `npx tsc --noEmit` PASS; `npm test` 210 PASS (4 new regression tests) |
 | **Fix 4** | Error-message leakage | `src/lib/apiResponse.ts`, `src/actions/auth.ts`, `src/app/api/error-leakage.test.ts` (new) | `npx tsc --noEmit` PASS; `npm test` 215 PASS (5 new regression tests) |
 | **Fix 5** | CA Assistant mock documentation | `.planning/PRODUCTION-READINESS.md` | Documented mock status: keyword-based, RBAC-enforced, business-scoped, audit-logged, confirmation-required |
+
+---
+
+#### PHASE B — PRODUCTION-READINESS REMEDIATION (Completed)
+
+| Item | Status | Files Changed | Verification |
+|------|--------|---------------|--------------|
+| **Email provider framework** | ✅ IMPLEMENTED | `src/lib/email/types.ts`, `src/lib/email/emailService.ts`, `src/lib/email/templates.ts`, `src/lib/email/index.ts` (new) | `npx tsc --noEmit` PASS; `npm test` 227 PASS |
+| **Resend env vars** | ✅ CONFIGURED | `.env`, `.env.local` | Placeholder variables added |
+| **Security headers (CSP)** | ✅ IMPLEMENTED | `proxy.ts` (new), `next.config.ts` | `npx tsc --noEmit` PASS; `npm test` 227 PASS |
+| **Shared helpers** | ✅ EXTRACTED | `src/lib/utils/index.ts`, `src/lib/utils/extractBusinessId.ts`, `src/lib/utils/decimalToString.ts`, `src/lib/utils/utils.test.ts` (new) | `npx tsc --noEmit` PASS; `npm test` 227 PASS |
+| **Route deduplication** | ✅ MIGRATED | `src/app/api/accounts/route.ts`, `src/app/api/reports/export/route.ts`, `src/app/api/reports/balance-sheet/route.ts`, `src/app/api/reports/profit-loss/route.ts`, `src/app/api/reports/trial-balance/route.ts`, `src/app/api/ai/ingest/route.ts`, `src/app/api/transactions/route.ts` | `npx tsc --noEmit` PASS; `npm test` 227 PASS |
+| **Placeholder tests strengthened** | ✅ REPLACED | `src/lib/utils/utils.test.ts` (new), `src/services/core-flow/endToEnd.test.ts`, `src/services/core-flow/reliability.test.ts`, `src/services/core-flow/iterationB.test.ts`, `src/services/core-flow/isolation.test.ts`, `src/services/auth/auth-flow.test.ts` | `npx tsc --noEmit` PASS; `npm test` 227 PASS |
+| **Middleware → Proxy migration** | ✅ MIGRATED | `src/proxy.ts` (new), `src/middleware.ts` (deleted) | Build no longer shows deprecation warning |
+
+### Final Verification (Phase B)
+
+| Command | Status |
+|---------|--------|
+| `npx tsc --noEmit` | ✅ PASS |
+| `npm run lint` | ✅ PASS (0 errors, 91 pre-existing warnings) |
+| `npm test` | ✅ 227 tests passed (31 files) |
+| `npm run build` | ✅ Compiled successfully, no middleware deprecation warning |
+
+### Remaining Work
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| Configure Resend API key in Supabase Auth dashboard | P0 | Requires actual Resend credentials |
+| End-to-end browser tests for email flows | P1 | Requires SMTP/Resend configuration |
+| Real LLM integration for CA Assistant | P2 | Not yet implemented |
+| CodeRabbit / Ponytail review | P2 | Requires external tool support |
+
+---
+
+#### FIX HISTORY (Production Blocker Resolution)
+
+| Fix | Blocker | Files Changed | Verification |
+|-----|---------|---------------|--------------|
+| **Fix 1** | TLS verification disabled | `src/lib/prisma.ts` | `npx tsc --noEmit` PASS; `npm test` 206→210 PASS |
+| **Fix 2** | No auth rate limiting | `src/actions/auth.ts`, `src/app/auth/callback/route.ts` | `npx tsc --noEmit` PASS; `npm test` 210 PASS |
+| **Fix 3** | CSV formula injection | `src/app/api/reports/export/route.ts`, `src/app/api/reports/export/route.test.ts` (new) | `npx tsc --noEmit` PASS; `npm test` 210 PASS (4 new regression tests) |
+| **Fix 4** | Error-message leakage | `src/lib/apiResponse.ts`, `src/actions/auth.ts`, `src/app/api/error-leakage.test.ts` (new) | `npx tsc --noEmit` PASS; `npm test` 215 PASS (5 new regression tests) |
+| **Fix 5** | CA Assistant mock documentation | `.planning/PRODUCTION-READINESS.md` | Documented mock status: keyword-based, RBAC-enforced, business-scoped, audit-logged, confirmation-required |

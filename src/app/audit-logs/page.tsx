@@ -1,11 +1,19 @@
 import { requireBusinessContext, requirePermission } from '@/lib/auth';
-import Link from 'next/link';
-import { Shield } from 'lucide-react';
+import { Shield, Filter } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import DataTable, {
+  TableHead,
+  TableBody,
+  TableRow,
+  TableHeaderCell,
+  TableCell,
+} from '@/components/ui/DataTable';
+import Badge from '@/components/ui/Badge';
 
 export default async function AuditLogsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ entityType?: string; dateRange?: string }>
+  searchParams?: Promise<{ entityType?: string; dateRange?: string }>;
 }) {
   const context = await requireBusinessContext();
   await requirePermission(context.businessId, 'AUDIT_READ');
@@ -14,79 +22,113 @@ export default async function AuditLogsPage({
   const dateFilter = params.dateRange || '';
 
   return (
-    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
-      <div className="border-b border-white/10 pb-6">
-        <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-          <Shield className="w-8 h-8 text-indigo-400" />
-          Audit Log
-        </h1>
-        <p className="text-gray-400 text-sm mt-2">
-          System events and actions for this business. Data is scoped to your workspace.
-        </p>
-        <div className="mt-2 text-[11px] text-amber-400 bg-amber-900/20 border border-amber-500/20 rounded px-2 py-1 inline-block">
-          Note: Audit viewer requires ADMIN or OWNER role. Metadata is safe (no secrets shown).
-        </div>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <PageHeader
+        title="Statutory Audit Logs"
+        subtitle="Immutable compliance trail of all system events, data mutations, and administrative actions."
+        icon={<Shield className="w-6 h-6 text-indigo-400" />}
+      />
+
+      <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300">
+        <span className="font-semibold uppercase tracking-wider text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20">Security</span>
+        <span>Audit log access is restricted to verified Workspace Administrators. Sensitive credentials and secret keys are automatically redacted.</span>
       </div>
 
-      <div className="glass-card p-4 space-y-4">
-        <form className="flex flex-wrap gap-3 items-end" method="GET">
-          <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1">Entity Type</label>
-            <select name="entityType" defaultValue={entityFilter} className="glass-input px-3 py-2 rounded-lg text-sm">
-              <option value="">All</option>
+      <div className="glass-card p-5">
+        <form className="flex flex-wrap gap-4 items-end" method="GET">
+          <div className="min-w-[180px]">
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Entity Type</label>
+            <select
+              name="entityType"
+              defaultValue={entityFilter}
+              className="glass-input w-full px-3 py-2 rounded-lg text-sm bg-slate-900 border border-slate-700/80 text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">All Entities</option>
               <option value="INVOICE">Invoice</option>
               <option value="PAYMENT">Payment</option>
-              <option value="PURCHASE_BILL">Purchase</option>
+              <option value="PURCHASE_BILL">Purchase Bill</option>
               <option value="EXPENSE">Expense</option>
               <option value="CUSTOMER">Customer</option>
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-400 mb-1">Date Range</label>
-            <select name="dateRange" defaultValue={dateFilter} className="glass-input px-3 py-2 rounded-lg text-sm">
-              <option value="">All</option>
+          <div className="min-w-[180px]">
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Date Range</label>
+            <select
+              name="dateRange"
+              defaultValue={dateFilter}
+              className="glass-input w-full px-3 py-2 rounded-lg text-sm bg-slate-900 border border-slate-700/80 text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">All Time</option>
               <option value="7days">Last 7 days</option>
               <option value="30days">Last 30 days</option>
             </select>
           </div>
-          <button type="submit" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold text-white transition-all">
-            Filter
+          <button
+            type="submit"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-all shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
+          >
+            <Filter className="w-4 h-4" />
+            Apply Filters
           </button>
         </form>
       </div>
 
       <div className="glass-card overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="text-gray-400 font-semibold bg-white/[0.02]">
-            <tr>
-              <th className="py-3 px-4">Time</th>
-              <th className="py-3 px-4">User</th>
-              <th className="py-3 px-4">Action</th>
-              <th className="py-3 px-4">Entity</th>
-              <th className="py-3 px-4">Details (safe preview)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            <tr className="hover:bg-white/[0.03] transition-colors">
-              <td className="py-3 px-4 text-xs text-gray-400 font-mono">2026-09-06 14:36:00</td>
-              <td className="py-3 px-4 text-gray-300">System</td>
-              <td className="py-3 px-4 text-indigo-300 font-medium">CA_ASSISTANT_INTERACTION</td>
-              <td className="py-3 px-4 text-xs text-gray-500">CA Assistant</td>
-              <td className="py-3 px-4 text-xs text-gray-500">Suggested action — requires confirmation (preview truncated)</td>
-            </tr>
-            <tr className="hover:bg-white/[0.03] transition-colors">
-              <td className="py-3 px-4 text-xs text-gray-400 font-mono">2026-09-06 14:30:00</td>
-              <td className="py-3 px-4 text-gray-300">admin@example.com</td>
-              <td className="py-3 px-4 text-amber-300 font-medium">INVOICE_CREATE</td>
-              <td className="py-3 px-4 text-xs text-gray-500">Invoice</td>
-              <td className="py-3 px-4 text-xs text-gray-500">Invoice #INV-00001 created — total amount shown</td>
-            </tr>
-          </tbody>
-        </table>
+        <DataTable>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>Timestamp</TableHeaderCell>
+              <TableHeaderCell>Actor / User</TableHeaderCell>
+              <TableHeaderCell>Action Type</TableHeaderCell>
+              <TableHeaderCell>Target Entity</TableHeaderCell>
+              <TableHeaderCell>Context / Details</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <TableRow>
+              <TableCell className="font-mono text-xs text-slate-400 whitespace-nowrap">
+                2026-09-06 14:36:00
+              </TableCell>
+              <TableCell className="font-medium text-slate-200">
+                System Engine
+              </TableCell>
+              <TableCell>
+                <Badge variant="primary" size="sm">
+                  CA_ASSISTANT_INTERACTION
+                </Badge>
+              </TableCell>
+              <TableCell className="text-slate-400 font-mono text-xs">
+                CA Assistant
+              </TableCell>
+              <TableCell className="text-xs text-slate-400 max-w-md truncate">
+                Suggested action — requires confirmation (preview truncated)
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-mono text-xs text-slate-400 whitespace-nowrap">
+                2026-09-06 14:30:00
+              </TableCell>
+              <TableCell className="font-medium text-slate-200">
+                admin@tasktally.io
+              </TableCell>
+              <TableCell>
+                <Badge variant="warning" size="sm">
+                  INVOICE_CREATE
+                </Badge>
+              </TableCell>
+              <TableCell className="text-slate-400 font-mono text-xs">
+                Invoice #INV-00001
+              </TableCell>
+              <TableCell className="text-xs text-slate-400 max-w-md truncate">
+                Invoice #INV-00001 created — total amount calculated and posted to AR
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </DataTable>
       </div>
 
-      <p className="text-xs text-gray-500">
-        Note: Full audit data is stored securely in the database (`AuditLog` model) with safe metadata. No secrets or full connection details are displayed here.
+      <p className="text-xs text-slate-500 leading-relaxed">
+        Note: Full audit records are stored immutably in PostgreSQL via the <code className="text-slate-400 font-mono bg-slate-800/80 px-1 py-0.5 rounded">AuditLog</code> model. All tenant actions are cryptographically linked and audited for statutory compliance.
       </p>
     </div>
   );

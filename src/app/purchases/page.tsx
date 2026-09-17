@@ -3,8 +3,19 @@ import { requireBusinessContext, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { serializePurchaseBill } from '@/lib/serialize';
 import Link from 'next/link';
-import { FileText, ArrowLeft, Plus, Search, Filter, DollarSign, Calendar, Clock } from 'lucide-react';
+import { FileText, Search, Truck, Eye } from 'lucide-react';
 import PurchaseBillFormModal from '@/components/purchases/PurchaseBillFormModal';
+import PageHeader from '@/components/ui/PageHeader';
+import MetricCard from '@/components/ui/MetricCard';
+import StatusBadge from '@/components/ui/StatusBadge';
+import EmptyState from '@/components/ui/EmptyState';
+import DataTable, {
+  TableHead,
+  TableBody,
+  TableRow,
+  TableHeaderCell,
+  TableCell,
+} from '@/components/ui/DataTable';
 
 export default async function PurchasesPage({
   searchParams,
@@ -60,235 +71,218 @@ export default async function PurchasesPage({
   });
 
   const currency = business?.baseCurrency || 'INR';
-  const currencySymbol = currency === 'INR' ? '₹' : '$';
+  const currencySymbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : `${currency} `;
 
   const fmt = (val: string | number | null | undefined) =>
-    val != null ? `${currencySymbol}${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currencySymbol}0.00`;
+    val != null
+      ? `${currencySymbol}${Number(val).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`
+      : `${currencySymbol}0.00`;
 
   const serializedBills = bills.map(serializePurchaseBill);
 
-  const totalPending = bills.filter(b => b.status !== 'PAID' && b.status !== 'CANCELLED').reduce((sum, b) => sum + Number(b.balanceDue), 0);
-  const totalThisMonth = bills.filter(b => new Date(b.billDate).getMonth() === new Date().getMonth()).reduce((sum, b) => sum + Number(b.totalAmount), 0);
+  const totalPending = bills
+    .filter((b) => b.status !== 'PAID' && b.status !== 'CANCELLED')
+    .reduce((sum, b) => sum + Number(b.balanceDue), 0);
+
+  const totalThisMonth = bills
+    .filter((b) => new Date(b.billDate).getMonth() === new Date().getMonth())
+    .reduce((sum, b) => sum + Number(b.totalAmount), 0);
 
   return (
-    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-            <FileText className="w-8 h-8 text-indigo-400" />
-            Purchase Bills
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Record supplier invoices, track accounts payable, and manage GST Input Tax Credit
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-all text-gray-300"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Dashboard
-          </Link>
-
-          {canCreate && <PurchaseBillFormModal businessId={context.businessId} suppliers={suppliers} products={products.map((product) => ({ ...product, costPrice: product.costPrice.toString(), stockQuantity: product.stockQuantity.toString() }))} currency={currency} />}
-        </div>
-      </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Purchase Bills & Payables"
+        subtitle="Record supplier invoices, track accounts payable, and verify input tax credit"
+        icon={<Truck className="w-5 h-5" />}
+        actions={
+          canCreate ? (
+            <PurchaseBillFormModal
+              businessId={context.businessId}
+              suppliers={suppliers}
+              products={products.map((product) => ({
+                ...product,
+                costPrice: product.costPrice.toString(),
+                stockQuantity: product.stockQuantity.toString(),
+              }))}
+              currency={currency}
+            />
+          ) : undefined
+        }
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium">Total Outstanding</span>
-          <p className="text-3xl font-extrabold text-amber-400 font-mono">{fmt(totalPending)}</p>
-          <span className="text-[11px] text-gray-500 block">Amount owed to suppliers</span>
-        </div>
+        <MetricCard
+          title="Total Outstanding"
+          value={fmt(totalPending)}
+          description="Amount owed to suppliers"
+          trend={{ value: 'Due to vendors', isPositive: false }}
+          icon={<Truck className="w-5 h-5" />}
+          iconBg="bg-amber-500/10 text-amber-400 border-amber-500/20"
+        />
 
-        <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium">This Month&apos;s Purchases</span>
-          <p className="text-3xl font-extrabold text-indigo-400 font-mono">{fmt(totalThisMonth)}</p>
-          <span className="text-[11px] text-gray-500 block">Total purchase volume</span>
-        </div>
+        <MetricCard
+          title="This Month's Purchases"
+          value={fmt(totalThisMonth)}
+          description="Total procurement volume"
+          icon={<FileText className="w-5 h-5" />}
+          iconBg="bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+        />
 
-        <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium">Open Bills</span>
-          <p className="text-3xl font-extrabold text-indigo-400 font-mono">
-            {bills.filter(b => b.status !== 'PAID' && b.status !== 'CANCELLED').length}
-          </p>
-          <span className="text-[11px] text-gray-500 block">Bills needing payment</span>
-        </div>
+        <MetricCard
+          title="Open Bills"
+          value={bills.filter((b) => b.status !== 'PAID' && b.status !== 'CANCELLED').length}
+          description="Bills needing payment"
+          icon={<FileText className="w-5 h-5" />}
+          iconBg="bg-sky-500/10 text-sky-400 border-sky-500/20"
+        />
 
-        <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium">Total Bills</span>
-          <p className="text-3xl font-extrabold text-white font-mono">{bills.length}</p>
-          <span className="text-[11px] text-gray-500 block">All purchase bills</span>
-        </div>
+        <MetricCard
+          title="Total Invoices"
+          value={bills.length}
+          description="All purchase bills"
+          icon={<FileText className="w-5 h-5" />}
+          iconBg="bg-slate-800 text-slate-300 border-slate-700"
+        />
       </div>
 
-      {/* Filters */}
-      <div className="glass-card p-4 space-y-4">
-        <form className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                name="search"
-                type="text"
-                value={search}
-                placeholder="Search by bill #, supplier invoice #, or supplier name..."
-                className="w-full pl-10 pr-4 py-2.5 glass-input rounded-xl text-sm"
-              />
-            </div>
-
-            <select
-              name="status"
-              value={statusFilter}
-              className="w-full sm:w-48 glass-input px-4 py-2.5 rounded-xl text-sm"
-            >
-              <option value="">All Statuses</option>
-              <option value="DRAFT">Draft</option>
-              <option value="RECEIVED">Received</option>
-              <option value="PARTIALLY_PAID">Partially Paid</option>
-              <option value="PAID">Paid</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-
-            <select
-              name="supplier"
-              value={supplierFilter}
-              className="w-full sm:w-56 glass-input px-4 py-2.5 rounded-xl text-sm"
-            >
-              <option value="">All Suppliers</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id} className="bg-gray-900 text-white">
-                  {s.name}
-                </option>
-              ))}
-            </select>
+      {/* Search & Filter Bar */}
+      <div className="glass-card p-4">
+        <form className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              name="search"
+              type="text"
+              defaultValue={search}
+              placeholder="Search by bill #, supplier invoice #, or supplier name..."
+              className="w-full pl-9 pr-4 py-2 bg-slate-900/80 border border-slate-700/80 rounded-lg text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            />
           </div>
+
+          <select
+            name="status"
+            defaultValue={statusFilter}
+            className="px-3.5 py-2 bg-slate-900/80 border border-slate-700/80 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          >
+            <option value="">All Statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="RECEIVED">Received</option>
+            <option value="PARTIALLY_PAID">Partially Paid</option>
+            <option value="PAID">Paid</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+
+          <select
+            name="supplier"
+            defaultValue={supplierFilter}
+            className="px-3.5 py-2 bg-slate-900/80 border border-slate-700/80 rounded-lg text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          >
+            <option value="">All Suppliers</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="submit"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-lg transition-colors"
+          >
+            Filter
+          </button>
         </form>
       </div>
 
       {/* Bills Table */}
-      <div className="glass-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-white/10 text-gray-400 font-semibold bg-white/[0.02]">
-                <th className="py-3.5 px-4">Bill #</th>
-                <th className="py-3.5 px-4">Supplier</th>
-                <th className="py-3.5 px-4">Supplier Inv #</th>
-                <th className="py-3.5 px-4">Date</th>
-                <th className="py-3.5 px-4 text-right">Total</th>
-                <th className="py-3.5 px-4 text-right">Paid</th>
-                <th className="py-3.5 px-4 text-right">Balance</th>
-                <th className="py-3.5 px-4 text-center">Status</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {serializedBills.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center text-gray-400">
-                    <FileText className="w-10 h-10 mx-auto text-gray-500 mb-2 opacity-50" />
-                    <p className="font-medium text-gray-300">No purchase bills found</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {search || statusFilter || supplierFilter
-                        ? 'Try adjusting your search filters'
-                        : 'Create your first purchase bill to start tracking accounts payable'}
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                serializedBills.map((bill) => {
-                  const totalNum = Number(bill.totalAmount);
-                  const paidNum = Number(bill.paidAmount);
-                  const balanceNum = Number(bill.balanceDue);
+      {serializedBills.length === 0 ? (
+        <EmptyState
+          inCard
+          icon={<Truck className="w-8 h-8" />}
+          title="No purchase bills found"
+          description={
+            search || statusFilter || supplierFilter
+              ? 'Try adjusting your search criteria or clear your filters.'
+              : 'Create your first purchase bill to track accounts payable and stock acquisition.'
+          }
+        />
+      ) : (
+        <DataTable>
+          <TableHead>
+            <tr>
+              <TableHeaderCell>Bill #</TableHeaderCell>
+              <TableHeaderCell>Supplier</TableHeaderCell>
+              <TableHeaderCell>Vendor Inv #</TableHeaderCell>
+              <TableHeaderCell>Date</TableHeaderCell>
+              <TableHeaderCell align="right">Total</TableHeaderCell>
+              <TableHeaderCell align="right">Paid</TableHeaderCell>
+              <TableHeaderCell align="right">Balance Due</TableHeaderCell>
+              <TableHeaderCell align="center">Status</TableHeaderCell>
+              <TableHeaderCell align="right">Action</TableHeaderCell>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {serializedBills.map((bill) => {
+              const totalNum = Number(bill.totalAmount);
+              const paidNum = Number(bill.paidAmount);
+              const balanceNum = Number(bill.balanceDue);
 
-                  const getStatusBadge = () => {
-                    switch (bill.status) {
-                      case 'DRAFT':
-                        return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-                      case 'RECEIVED':
-                        return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30';
-                      case 'PARTIALLY_PAID':
-                        return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
-                      case 'PAID':
-                        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
-                      case 'CANCELLED':
-                        return 'bg-red-500/20 text-red-300 border-red-500/30';
-                      default:
-                        return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-                    }
-                  };
-
-                  return (
-                    <tr key={bill.id} className="hover:bg-white/[0.03] transition-colors">
-                      <td className="py-3.5 px-4">
-                        <span className="font-mono font-semibold text-white">{bill.billNumber}</span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <Link
-                          href={`/suppliers/${bill.supplierId}`}
-                          className="text-indigo-400 hover:underline font-medium text-sm"
-                        >
-                          {bill.supplier?.name || 'Unknown Supplier'}
-                        </Link>
-                      </td>
-                      <td className="py-3.5 px-4 text-gray-400 font-mono text-xs">
-                        {bill.supplierInvoiceNumber || '—'}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-gray-400 font-mono">
-                        {new Date(bill.billDate).toLocaleDateString()}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-gray-300">
-                        {fmt(totalNum)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-emerald-400">
-                        {fmt(paidNum)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
-                        {fmt(balanceNum)}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadge()}`}>
-                          {bill.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <Link
-                          href={`/purchases/${bill.id}`}
-                          className="p-1.5 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white transition-all inline-flex items-center"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              return (
+                <TableRow key={bill.id}>
+                  <TableCell>
+                    <span className="font-mono font-semibold text-slate-100">
+                      {bill.billNumber}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/suppliers/${bill.supplierId}`}
+                      className="text-indigo-400 hover:text-indigo-300 font-medium text-sm transition-colors"
+                    >
+                      {bill.supplier?.name || 'Unknown Supplier'}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-slate-400 font-mono text-xs">
+                    {bill.supplierInvoiceNumber || '—'}
+                  </TableCell>
+                  <TableCell className="text-slate-400 text-xs">
+                    {new Date(bill.billDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell align="right" isNumeric className="font-medium text-slate-100">
+                    {fmt(totalNum)}
+                  </TableCell>
+                  <TableCell align="right" isNumeric className="font-medium text-emerald-400">
+                    {fmt(paidNum)}
+                  </TableCell>
+                  <TableCell
+                    align="right"
+                    isNumeric
+                    className={balanceNum > 0 ? 'text-amber-300 font-bold' : 'text-slate-400'}
+                  >
+                    {fmt(balanceNum)}
+                  </TableCell>
+                  <TableCell align="center">
+                    <StatusBadge status={bill.status} size="xs" />
+                  </TableCell>
+                  <TableCell align="right">
+                    <Link
+                      href={`/purchases/${bill.id}`}
+                      aria-label={`View bill ${bill.billNumber}`}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors inline-flex items-center"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </DataTable>
+      )}
     </div>
   );
-}
-
-function getStatusBadge(status: string) {
-  switch (status) {
-    case 'DRAFT':
-      return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-    case 'RECEIVED':
-      return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30';
-    case 'PARTIALLY_PAID':
-      return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
-    case 'PAID':
-      return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
-    case 'CANCELLED':
-      return 'bg-red-500/20 text-red-300 border-red-500/30';
-    default:
-      return 'bg-gray-500/20 text-gray-300 border-gray-500/30';
-  }
 }

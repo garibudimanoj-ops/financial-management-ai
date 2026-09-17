@@ -3,9 +3,9 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { finalizeSaleAction } from '@/actions/invoice';
 import { listProducts } from '@/actions/product';
+import Link from 'next/link';
 import { getTaxRateForCategory } from '@/lib/invoices/calculations';
 import { getStockWarning } from '@/lib/pos/stockWarning';
-import Link from 'next/link';
 import { Search, Plus, Minus, Trash2, ShoppingCart, User, CreditCard, Banknote, Smartphone, X, Check, AlertCircle, Wallet } from 'lucide-react';
 
 interface Product {

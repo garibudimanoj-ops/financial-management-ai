@@ -5,10 +5,9 @@ import { BotMessageSquare } from 'lucide-react';
 
 export default function CAAssistantClient({
   businessId,
-  role,
 }: {
   businessId: string;
-  role: string;
+  role?: string;
 }) {
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
     { role: 'assistant', content: 'Hello. I am your CA Assistant. Ask me about your business data, or request a draft action (e.g., "Suggest a draft invoice for Customer X"). All action suggestions require your confirmation before posting.' },

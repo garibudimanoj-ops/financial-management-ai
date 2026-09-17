@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
 import { AppError } from '@/lib/errors';
+import { extractBusinessId, decimalToString } from '@/lib/utils';
 
 function escapeCSV(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -17,17 +17,11 @@ function escapeCSV(value: unknown): string {
   return str;
 }
 
-function decimalToString(val: Prisma.Decimal | null | undefined): string {
-  if (val === null || val === undefined) return '0.00';
-  return val.toFixed(2);
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const requestedBusinessId = searchParams.get('businessId') || searchParams.get('companyId') || undefined;
+    const { businessId: requestedBusinessId } = extractBusinessId(request);
     const context = await requirePermission(requestedBusinessId, 'REPORT_EXPORT');
-    const type = searchParams.get('type') || 'invoices';
+    const type = new URL(request.url).searchParams.get('type') || 'invoices';
 
     let csv = '';
     let filename = '';

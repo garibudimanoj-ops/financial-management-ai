@@ -2,7 +2,6 @@ import { requireBusinessContext } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { getInventorySummary } from '@/lib/inventory/service';
-import { serializeProduct } from '@/lib/serialize';
 import StockInDialog from '@/components/inventory/StockInDialog';
 import StockAdjustmentDialog from '@/components/inventory/StockAdjustmentDialog';
 import MovementHistoryTable from '@/components/inventory/MovementHistoryTable';
@@ -11,13 +10,13 @@ import {
   Boxes,
   Package,
   AlertTriangle,
-  TrendingUp,
   History,
-  ArrowLeft,
   ArrowRight,
-  PackagePlus,
-  SlidersHorizontal,
 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import MetricCard from '@/components/ui/MetricCard';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 
 export default async function InventoryPage() {
   const context = await requireBusinessContext();
@@ -46,7 +45,7 @@ export default async function InventoryPage() {
   ]);
 
   const currency = business?.baseCurrency || 'INR';
-  const currencySymbol = currency === 'INR' ? '₹' : '$';
+  const currencySymbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : `${currency} `;
 
   const productOptions = allProducts.map((p) => ({
     id: p.id,
@@ -62,172 +61,144 @@ export default async function InventoryPage() {
   );
 
   return (
-    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-            <Boxes className="w-8 h-8 text-emerald-400" />
-            Inventory & Stock Operations
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Real-time stock valuation, incoming batch receipt, and movement tracking
-          </p>
-        </div>
+    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+      <PageHeader
+        title="Inventory & Warehouse"
+        subtitle="Real-time stock valuation, batch receipts, and movement ledgers"
+        icon={<Boxes className="w-5 h-5" />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link href="/products">
+              <Button variant="secondary" size="sm" icon={<Package className="w-4 h-4" />}>
+                Catalog
+              </Button>
+            </Link>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/products"
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-all text-gray-300"
-          >
-            <Package className="w-4 h-4 text-indigo-400" />
-            Products Catalog
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-all text-white"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Dashboard
-          </Link>
-
-          <StockInDialog
-            businessId={context.businessId}
-            currency={currency}
-            products={productOptions}
-          />
-
-          {canAdjust && (
-            <StockAdjustmentDialog
+            <StockInDialog
               businessId={context.businessId}
               currency={currency}
               products={productOptions}
             />
-          )}
-        </div>
-      </div>
+
+            {canAdjust && (
+              <StockAdjustmentDialog
+                businessId={context.businessId}
+                currency={currency}
+                products={productOptions}
+              />
+            )}
+          </div>
+        }
+      />
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Active SKUs */}
-        <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium">Active Catalog SKUs</span>
-          <p className="text-3xl font-extrabold text-white font-mono">
-            {summary.totalProducts}
-          </p>
-          <span className="text-[11px] text-gray-500 block">Catalog items in rotation</span>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <MetricCard
+          title="Active SKUs"
+          value={summary.totalProducts}
+          description="Catalog items in rotation"
+          icon={<Package className="w-5 h-5" />}
+          iconBg="bg-slate-800 text-slate-300 border-slate-700"
+        />
 
-        {/* Total Units in Stock */}
-        <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium">Total Physical Units</span>
-          <p className="text-3xl font-extrabold text-indigo-400 font-mono">
-            {Number(summary.totalUnits).toLocaleString()}
-          </p>
-          <span className="text-[11px] text-gray-500 block">Combined inventory quantity</span>
-        </div>
+        <MetricCard
+          title="Physical Units"
+          value={Number(summary.totalUnits).toLocaleString()}
+          description="Combined stock inventory"
+          icon={<Boxes className="w-5 h-5" />}
+          iconBg="bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+        />
 
-        {/* Inventory Valuation */}
-        <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium">
-            {isOwner ? 'Holding Valuation (Cost)' : 'Operational Status'}
-          </span>
-          {isOwner ? (
-            <>
-              <p className="text-3xl font-extrabold text-emerald-400 font-mono">
-                {currencySymbol}
-                {Number(summary.totalValuation).toLocaleString('en-US', {
+        <MetricCard
+          title={isOwner ? 'Holding Valuation' : 'Inventory State'}
+          value={
+            isOwner
+              ? `${currencySymbol}${Number(summary.totalValuation).toLocaleString('en-US', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                })}
-              </p>
-              <span className="text-[11px] text-gray-500 block">
-                Weighted-average cost valuation
-              </span>
-            </>
-          ) : (
-            <>
-              <p className="text-2xl font-bold text-white mt-1">Active</p>
-              <span className="text-[11px] text-gray-500 block">Staff operational mode</span>
-            </>
-          )}
-        </div>
+                })}`
+              : 'Active'
+          }
+          description="Weighted-average cost"
+          trend={{ value: 'Asset Value', isPositive: true }}
+          icon={<Boxes className="w-5 h-5" />}
+          iconBg="bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+        />
 
-        {/* Low Stock Alerts */}
-        <div className="glass-card p-5 space-y-1">
-          <span className="text-xs text-gray-400 font-medium flex items-center justify-between">
-            Low Stock Alerts
-            {summary.lowStockCount > 0 && (
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            )}
-          </span>
-          <p
-            className={`text-3xl font-extrabold font-mono ${
-              summary.lowStockCount > 0 ? 'text-amber-400' : 'text-gray-300'
-            }`}
-          >
-            {summary.lowStockCount}
-          </p>
-          <span className="text-[11px] text-gray-500 block">
-            {summary.lowStockCount > 0 ? 'SKUs need replenishment' : 'All stock levels healthy'}
-          </span>
-        </div>
+        <MetricCard
+          title="Low Stock Alerts"
+          value={summary.lowStockCount}
+          description={
+            summary.lowStockCount > 0
+              ? 'Replenishment needed'
+              : 'All inventory healthy'
+          }
+          trend={{
+            value: summary.lowStockCount > 0 ? 'Action Needed' : 'Normal',
+            isPositive: summary.lowStockCount === 0,
+          }}
+          icon={<AlertTriangle className="w-5 h-5" />}
+          iconBg={
+            summary.lowStockCount > 0
+              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+          }
+        />
       </div>
 
-      {/* Low-Stock Attention Grid (If Any) */}
+      {/* Low-Stock Attention Grid */}
       {lowStockProducts.length > 0 && (
-        <div className="glass-card p-6 space-y-4 border-amber-500/20 bg-amber-500/[0.02]">
+        <Card className="p-5 sm:p-6 border-amber-500/30 bg-amber-950/10 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-amber-300 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-400" />
-              Stock Replenishment Needed ({lowStockProducts.length})
-            </h2>
-            <span className="text-xs text-gray-400 font-mono">Items at or below reorder threshold</span>
+            <h3 className="text-sm sm:text-base font-bold text-amber-300 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              Stock Replenishment Needed ({lowStockProducts.length} SKUs)
+            </h3>
+            <span className="text-xs text-slate-400 font-mono">Safety stock threshold breached</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {lowStockProducts.slice(0, 6).map((item) => (
               <div
                 key={item.id}
-                className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex justify-between items-center text-sm"
+                className="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80 flex justify-between items-center text-xs"
               >
-                <div>
+                <div className="space-y-0.5 overflow-hidden pr-2">
                   <Link
                     href={`/products/${item.id}`}
-                    className="font-semibold text-white hover:text-indigo-400 transition-colors"
+                    className="font-semibold text-slate-200 hover:text-indigo-400 transition-colors truncate block"
                   >
                     {item.name}
                   </Link>
-                  <p className="text-xs text-gray-400 font-mono">SKU: {item.SKU}</p>
+                  <p className="text-[10px] text-slate-400 font-mono">SKU: {item.SKU}</p>
                 </div>
-                <div className="text-right">
-                  <span className="font-bold text-amber-400 font-mono">
+                <div className="text-right shrink-0">
+                  <span className="font-bold text-amber-300 font-mono">
                     {Number(item.stockQuantity)} {item.unit}
                   </span>
-                  <span className="text-[10px] text-gray-500 block">
-                    (Limit: {Number(item.lowStockThreshold)})
+                  <span className="text-[10px] text-slate-400 block">
+                    (min {Number(item.lowStockThreshold)})
                   </span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Recent Movements Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <History className="w-5 h-5 text-indigo-400" />
+          <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
+            <History className="w-4 h-4 text-indigo-400" />
             Recent Stock Movements
           </h2>
 
           <Link
             href="/inventory/movements"
-            className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
           >
-            View Complete Movement Ledger
+            View Full Ledger
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
