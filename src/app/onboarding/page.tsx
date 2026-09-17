@@ -38,7 +38,11 @@ export default function OnboardingPage() {
         taxRegistrationStatus,
         taxId: taxRegistrationStatus ? taxId : null,
       });
-    } catch (err) {
+    } catch (err: unknown) {
+      // Preserve Next.js redirect exceptions; don't swallow NEXT_REDIRECT
+      if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
+        throw err;
+      }
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoading(false);
     }
@@ -62,8 +66,9 @@ export default function OnboardingPage() {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
             <input
+              id="name"
               name="name"
               type="text"
               required

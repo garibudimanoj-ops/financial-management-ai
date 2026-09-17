@@ -19,7 +19,11 @@ export default function SignupPage() {
 
     try {
       await signup({ email, password });
-    } catch (err) {
+    } catch (err: unknown) {
+      // Preserve Next.js redirect exceptions; don't swallow NEXT_REDIRECT
+      if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
+        throw err;
+      }
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoading(false);
     }

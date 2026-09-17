@@ -19,7 +19,10 @@ export default function LoginPage() {
 
     try {
       await login({ email, password });
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
+        throw err;
+      }
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoading(false);
     }
@@ -43,22 +46,26 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-            <input
-              name="email"
-              type="email"
-              required
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
               className="w-full glass-input px-4 py-3 rounded-lg text-sm"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Password</label>
-            <input
-              name="password"
-              type="password"
-              required
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
               className="w-full glass-input px-4 py-3 rounded-lg text-sm"
               placeholder="••••••••"
             />

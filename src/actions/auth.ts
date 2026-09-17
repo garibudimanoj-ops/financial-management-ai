@@ -62,7 +62,7 @@ export async function signup(formData: z.infer<typeof authSchema>) {
     email: parsed.email,
     password: parsed.password,
     options: {
-      emailRedirectTo: `${siteUrl}/login`,
+      emailRedirectTo: `${siteUrl}/auth/callback?next=/login`,
     },
   });
 
@@ -126,11 +126,11 @@ export async function requestPasswordReset(formData: z.infer<typeof resetRequest
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
   // Temporary diagnostic logging for CI/debugging (no secrets logged)
-  const redirectTarget = `${siteUrl}/reset-password`;
+  const redirectTarget = `${siteUrl}/auth/callback?next=/reset-password`;
   console.log(`[Auth Reset Request] URL base: ${siteUrl}; redirect target: ${redirectTarget}`);
 
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.email, {
-    redirectTo: `${siteUrl}/reset-password`,
+    redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
   });
 
   if (error) {

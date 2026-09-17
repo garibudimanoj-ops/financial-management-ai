@@ -39,7 +39,10 @@ export default function ResetPasswordPage() {
 
     try {
       await updatePassword({ password });
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
+        throw err;
+      }
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setLoading(false);
     }
@@ -67,10 +70,12 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">New Password</label>
+            <label htmlFor="new-password" className="block text-sm font-medium text-gray-300 mb-1">New Password</label>
             <input
+              id="new-password"
               name="password"
               type="password"
+              autoComplete="new-password"
               required
               className="w-full glass-input px-4 py-3 rounded-lg text-sm"
               placeholder="••••••••"
