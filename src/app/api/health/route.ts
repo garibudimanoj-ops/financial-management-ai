@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const prisma = new PrismaClient();
     await prisma.$queryRaw`SELECT 1`;
-    await prisma.$disconnect();
 
     return NextResponse.json({
       status: 'ok',
@@ -14,9 +12,16 @@ export async function GET() {
       environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString(),
     });
-  } catch {
+  } catch (error) {
+    console.error('[Health Check] Database check failed:', error);
+
     return NextResponse.json(
-      { status: 'degraded', db: 'blocked', environment: process.env.NODE_ENV || 'development', timestamp: new Date().toISOString() },
+      {
+        status: 'degraded',
+        db: 'blocked',
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString(),
+      },
       { status: 503 }
     );
   }
