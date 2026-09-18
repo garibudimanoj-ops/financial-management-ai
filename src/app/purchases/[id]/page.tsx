@@ -68,7 +68,7 @@ export default async function PurchaseBillDetailPage({ params }: PurchaseBillDet
   };
 
   return (
-    <div className="min-h-screen p-6 max-w-5xl mx-auto space-y-8">
+    <div className="p-6 max-w-5xl mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
         <div>
           <div className="flex items-center gap-3">

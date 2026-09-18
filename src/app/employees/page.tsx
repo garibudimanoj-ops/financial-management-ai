@@ -4,34 +4,80 @@ import InviteForm from '@/components/InviteForm';
 import MemberList from '@/components/MemberList';
 import Link from 'next/link';
 import { ArrowLeft, Users } from 'lucide-react';
+import type { BusinessContext } from '@/lib/auth';
+
+interface Member {
+  id: string;
+  userId: string;
+  role: string;
+  status: string;
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+  };
+}
+
+interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  expiresAt: string | Date;
+}
 
 export default async function EmployeesPage() {
-  const context = await requireBusinessContext();
-  await requirePermission(context.businessId, 'MEMBERS_READ');
+  let context: BusinessContext | null = null;
+  let members: Member[] = [];
+  let invitations: Invitation[] = [];
+  let canManage = false;
+  let error: unknown = null;
 
-  const members = await prisma.businessMember.findMany({
-    where: { businessId: context.businessId },
-    include: {
-      user: {
-        select: {
-          id: true,
-          email: true,
-          name: true,
+  try {
+    context = await requireBusinessContext();
+    await requirePermission(context.businessId, 'MEMBERS_READ');
+
+    const rawMembers = await prisma.businessMember.findMany({
+      where: { businessId: context.businessId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: 'asc' },
-  });
+      orderBy: { createdAt: 'asc' },
+    });
+    members = rawMembers as Member[];
 
-  const invitations = await prisma.businessInvitation.findMany({
-    where: { businessId: context.businessId },
-    orderBy: { createdAt: 'desc' },
-  });
+    invitations = await prisma.businessInvitation.findMany({
+      where: { businessId: context.businessId },
+      orderBy: { createdAt: 'desc' },
+    }) as Invitation[];
 
-  const canManage = context.role === 'OWNER' || context.role === 'ADMIN';
+    canManage = context.role === 'OWNER' || context.role === 'ADMIN';
+  } catch (err: unknown) {
+    error = err;
+    console.error('[Employees Page] Error:', err);
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto py-16 flex items-center justify-center">
+        <div className="glass-card p-8 text-center space-y-4 max-w-md">
+          <h1 className="text-xl font-bold text-white">Team Data Unavailable</h1>
+          <p className="text-sm text-slate-400">Unable to load team members. Please retry or contact support.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const ctx = context!;
 
   return (
-    <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-8">
+    <div className="p-6 max-w-6xl mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
@@ -53,14 +99,14 @@ export default async function EmployeesPage() {
 
       {canManage && (
         <div className="glass-card p-6">
-          <InviteForm businessId={context.businessId} />
+          <InviteForm businessId={ctx.businessId} />
         </div>
       )}
 
       <MemberList
-        businessId={context.businessId}
-        currentUserId={context.userId}
-        currentUserRole={context.role}
+        businessId={ctx.businessId}
+        currentUserId={ctx.userId}
+        currentUserRole={ctx.role}
         members={members}
         invitations={invitations}
       />

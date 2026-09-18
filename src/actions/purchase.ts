@@ -9,6 +9,7 @@ import {
 } from '@/services/purchases/purchaseService';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { AppError } from '@/lib/errors';
 import { PaymentMethod, PurchaseBillStatus } from '@prisma/client';
 
 const purchaseItemSchema = z.object({
@@ -142,14 +143,19 @@ export async function cancelPurchaseBillFormAction(businessId: string, billId: s
 }
 
 export async function recordPurchasePaymentFormAction(businessId: string, billId: string, supplierId: string, formData: FormData): Promise<void> {
-  await recordPurchasePaymentAction(businessId, {
-    billId,
-    supplierId,
-    amount: String(formData.get('amount') || ''),
-    paymentMethod: String(formData.get('paymentMethod') || 'BANK_TRANSFER') as PaymentMethod,
-    paymentDate: String(formData.get('paymentDate') || '') || null,
-    reference: String(formData.get('reference') || '') || null,
-    notes: String(formData.get('notes') || '') || null,
-    idempotencyKey: `payment-${billId}-${crypto.randomUUID()}`,
-  });
+  try {
+    await recordPurchasePaymentAction(businessId, {
+      billId,
+      supplierId,
+      amount: String(formData.get('amount') || ''),
+      paymentMethod: String(formData.get('paymentMethod') || 'BANK_TRANSFER') as PaymentMethod,
+      paymentDate: String(formData.get('paymentDate') || '') || null,
+      reference: String(formData.get('reference') || '') || null,
+      notes: String(formData.get('notes') || '') || null,
+      idempotencyKey: `payment-${billId}-${crypto.randomUUID()}`,
+    });
+  } catch (err: unknown) {
+    console.error('[Purchase Pay] Error recording payment:', err);
+    throw new AppError('Unable to record payment. Please verify details and try again.', 'INTERNAL_ERROR');
+  }
 }

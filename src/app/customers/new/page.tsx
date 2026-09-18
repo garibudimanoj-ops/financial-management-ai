@@ -16,7 +16,7 @@ export default async function NewCustomerPage() {
   const currency = business?.baseCurrency || 'INR';
 
   return (
-    <div className="min-h-screen p-6 max-w-4xl mx-auto space-y-8">
+    <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div className="flex justify-between items-center border-b border-white/10 pb-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">

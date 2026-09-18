@@ -1,11 +1,13 @@
+/* eslint-disable react-hooks/error-boundaries */
 import { requireBusinessContext, hasPermission } from '@/lib/auth';
 import CAAssistantClient from '@/components/ca-assistant/CAAssistantClient';
 import PageHeader from '@/components/ui/PageHeader';
 import { BotMessageSquare, AlertCircle } from 'lucide-react';
 
 export default async function CAAssistantPage() {
-  const context = await requireBusinessContext();
-  const canAccess = hasPermission(context.role, 'CA_ASSISTANT');
+  try {
+    const context = await requireBusinessContext();
+    const canAccess = hasPermission(context.role, 'CA_ASSISTANT');
 
   if (!canAccess) {
     return (
@@ -39,4 +41,20 @@ export default async function CAAssistantPage() {
       <CAAssistantClient businessId={context.businessId} role={context.role} />
     </div>
   );
+  } catch (err: unknown) {
+    console.error('[CA Assistant Page] Error:', err);
+    return (
+      <div className="max-w-4xl mx-auto py-16 flex items-center justify-center">
+        <div className="glass-card p-8 text-center space-y-4 max-w-md">
+          <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6 text-amber-400" />
+          </div>
+          <h1 className="text-xl font-bold text-white">Unable to Load Copilot</h1>
+          <p className="text-sm text-slate-400">
+            A temporary issue prevented loading the CA Assistant. Please retry or contact support if this continues.
+          </p>
+        </div>
+      </div>
+    );
+  }
 }

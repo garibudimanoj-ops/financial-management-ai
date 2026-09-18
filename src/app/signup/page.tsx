@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { z } from 'zod';
 import { signup } from '@/actions/auth';
 import Link from 'next/link';
 import { ShieldCheck, UserPlus, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
@@ -9,6 +10,11 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const signupSchema = z.object({
+    email: z.string().email('Please enter a valid work email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -19,8 +25,15 @@ export default function SignupPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
+    const parsed = signupSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message || 'Please check your input and try again.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await signup({ email, password });
+      await signup({ email: parsed.data.email, password: parsed.data.password });
     } catch (err: unknown) {
       // Preserve Next.js redirect exceptions; don't swallow NEXT_REDIRECT
       if (

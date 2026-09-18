@@ -19,7 +19,7 @@ export default async function InventoryMovementsPage() {
   const currency = business?.baseCurrency || 'INR';
 
   return (
-    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 max-w-7xl mx-auto space-y-8">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
         <div>

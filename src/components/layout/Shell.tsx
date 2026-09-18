@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { ReactNode, useState } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import ErrorBoundary from './ErrorBoundary';
 
 interface ShellProps {
   children: ReactNode;
@@ -38,7 +39,7 @@ export default function Shell({ children }: ShellProps) {
   if (isAuthRoute) {
     return (
       <main className="min-h-screen w-full flex flex-col bg-[#0b0f19]">
-        {children}
+        <ErrorBoundary>{children}</ErrorBoundary>
       </main>
     );
   }
@@ -65,7 +66,7 @@ export default function Shell({ children }: ShellProps) {
           onOpenMobile={() => setMobileOpen(true)}
         />
         <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
     </div>

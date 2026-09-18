@@ -1,6 +1,6 @@
 export default function ProductsLoading() {
   return (
-    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center border-b border-white/10 pb-6">
         <div className="space-y-2">
           <div className="h-8 w-48 bg-white/5 rounded animate-pulse" />
