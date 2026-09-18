@@ -26,10 +26,12 @@ function buildPrismaClient(): PrismaClient {
   // set ssl options directly so we control the behavior.
   connectionUrl.searchParams.delete('sslmode');
 
+  const ca = process.env.SUPABASE_CA_CERT?.replace(/\\n/g, '\n');
+
   const pool = new Pool({
     connectionString: connectionUrl.toString(),
     ssl: isProduction
-      ? { rejectUnauthorized: true }
+      ? { rejectUnauthorized: true, ...(ca ? { ca } : {}) }
       : { rejectUnauthorized: false },
     // Keep connections alive to prevent silent drops from Supabase (~60s idle limit)
     keepAlive: true,
