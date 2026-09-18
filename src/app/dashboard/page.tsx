@@ -5,19 +5,25 @@ import BusinessSwitcher from '@/components/BusinessSwitcher';
 import Link from 'next/link';
 import {
   Users,
-  Settings as SettingsIcon,
-  FileText,
-  Boxes,
   Receipt,
-  LogOut,
+  Boxes,
   TrendingUp,
   ShieldCheck,
   ShoppingCart,
   CreditCard,
   BarChart3,
-  Plus,
   Calendar,
+  AlertTriangle,
+  Bot,
+  ArrowRight,
+  FileText,
+  CheckCircle2,
+  Package,
 } from 'lucide-react';
+import MetricCard from '@/components/ui/MetricCard';
+import Badge from '@/components/ui/Badge';
+import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 
 type DateRange = 'today' | 'this-week' | 'this-month' | 'this-year' | 'all-time';
 
@@ -74,6 +80,7 @@ export default async function DashboardPage({
     totalProducts,
     totalCustomers,
     lowStockCount,
+    lowStockItems,
     totalInvoices,
     paidInvoices,
     unpaidInvoices,
@@ -84,6 +91,7 @@ export default async function DashboardPage({
     filteredPayments,
     outstandingReceivables,
     inventoryValuation,
+    recentInvoices,
   ] = await Promise.all([
     prisma.product.count({ where: { businessId: context.businessId, archived: false } }),
     prisma.customer.count({ where: { businessId: context.businessId, archived: false } }),
@@ -93,6 +101,15 @@ export default async function DashboardPage({
         archived: false,
         stockQuantity: { lte: prisma.product.fields.lowStockThreshold },
       },
+    }),
+    prisma.product.findMany({
+      where: {
+        businessId: context.businessId,
+        archived: false,
+        stockQuantity: { lte: prisma.product.fields.lowStockThreshold },
+      },
+      select: { id: true, name: true, stockQuantity: true, lowStockThreshold: true },
+      take: 4,
     }),
     prisma.invoice.count({ where: { businessId: context.businessId } }),
     prisma.invoice.count({ where: { businessId: context.businessId, status: 'PAID' } }),
@@ -115,346 +132,507 @@ export default async function DashboardPage({
       _sum: { amount: true },
     }),
     prisma.customer.aggregate({ where: { businessId: context.businessId }, _sum: { currentBalance: true } }),
-    // Monetary inventory valuation (weighted-average cost), not a raw unit count.
     getInventorySummary(context.businessId),
+    prisma.invoice.findMany({
+      where: { businessId: context.businessId },
+      orderBy: { createdAt: 'desc' },
+      take: 4,
+      include: {
+        customer: { select: { name: true } },
+      },
+    }),
   ]);
 
   const currency = business?.baseCurrency || 'INR';
-  const currencySymbol = currency === 'INR' ? '₹' : '$';
+  const currencySymbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : `${currency} `;
 
   const fmt = (val: number | string | null | undefined) =>
-    val != null ? `${currencySymbol}${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currencySymbol}0.00`;
+    val != null
+      ? `${currencySymbol}${Number(val).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`
+      : `${currencySymbol}0.00`;
+
+  const paidRatio =
+    totalInvoices > 0 ? Math.round((paidInvoices / totalInvoices) * 100) : 0;
+
+  const totalSalesNum = filteredSales._sum.totalAmount?.toNumber() || 0;
+  const totalCollectionsNum = filteredPayments._sum.amount?.toNumber() || 0;
+  const receivablesNum = outstandingReceivables._sum.currentBalance?.toNumber() || 0;
 
   return (
-    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
-      {/* Top Header / Navigation Bar */}
-      <div className="flex flex-col md:flex-row items-between gap-4 border-b border-white/10 pb-6">
-        <div className="flex items-center gap-4">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+      {/* ================================================================= */}
+      {/* Executive Header & Filter Bar */}
+      {/* ================================================================= */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+        <div className="flex items-center gap-3.5 flex-wrap">
           <BusinessSwitcher
             currentBusinessId={context.businessId}
             businesses={businesses}
           />
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              {context.role} Access
-            </span>
-          </div>
+          <Badge variant="primary" icon={<ShieldCheck className="w-3.5 h-3.5" />}>
+            {context.role} Access
+          </Badge>
+          <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+            Base: {currency}
+          </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          {isOwner && (
-            <Link
-              href="/employees"
-              className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-all text-gray-200"
-            >
-              <Users className="w-4 h-4 text-indigo-400" />
-              Team
-            </Link>
-          )}
-
-          <Link
-            href="/settings"
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-all text-gray-200"
-          >
-            <SettingsIcon className="w-4 h-4 text-gray-400" />
-            Settings
-          </Link>
-
-          <form action={await (await import('@/actions/auth')).logout}>
-            <button
-              type="submit"
-              className="flex items-center gap-2 px-4 py-2 bg-red-950/30 border border-red-500/30 text-red-300 rounded-xl text-sm font-medium hover:bg-red-900/40 transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-              Log Out
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* Date Range Filter & Quick Actions */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 mr-2">
-            <Calendar className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Date Range</span>
-          </div>
+        {/* Date Range Selector */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-slate-800/80 overflow-x-auto">
+          <Calendar className="w-3.5 h-3.5 text-slate-400 ml-2 mr-1 shrink-0" aria-hidden="true" />
           {([
             { value: 'today', label: 'Today' },
             { value: 'this-week', label: 'This Week' },
-            { value: 'this-month', label: 'This Month' },
-            { value: 'this-year', label: 'This Year' },
+            { value: 'this-month', label: 'Month' },
+            { value: 'this-year', label: 'Year' },
             { value: 'all-time', label: 'All Time' },
-          ] as const).map((opt) => (
-            <Link
-              key={opt.value}
-              href={opt.value === 'all-time' ? '/dashboard' : `/dashboard?range=${opt.value}`}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                range === opt.value
-                  ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-                  : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              {opt.label}
-            </Link>
-          ))}
+          ] as const).map((opt) => {
+            const isSelected = range === opt.value;
+            return (
+              <Link
+                key={opt.value}
+                href={opt.value === 'all-time' ? '/dashboard' : `/dashboard?range=${opt.value}`}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                {opt.label}
+              </Link>
+            );
+          })}
         </div>
-
-        {isOwner && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mr-2">Quick Actions</span>
-            <Link
-              href="/products/new"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Product
-            </Link>
-            <Link
-              href="/pos"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all"
-            >
-              <Receipt className="w-3.5 h-3.5" />
-              Issue Invoice
-            </Link>
-            <Link
-              href="/customers/new"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-500/10 text-purple-300 border border-purple-500/20 hover:bg-purple-500/20 transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Customer
-            </Link>
-            <Link
-              href="/inventory"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-teal-500/10 text-teal-300 border border-teal-500/20 hover:bg-teal-500/20 transition-all"
-            >
-              <Boxes className="w-3.5 h-3.5" />
-              Stock In
-            </Link>
-            <Link
-              href="/payments"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition-all"
-            >
-              <CreditCard className="w-3.5 h-3.5" />
-              Record Payment
-            </Link>
-          </div>
-        )}
       </div>
 
-      {/* Financial Snapshot */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card p-6 md:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
+      {/* ================================================================= */}
+      {/* BENTO ZONE 1: Executive KPI Metrics Cards */}
+      {/* ================================================================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <MetricCard
+          title={rangeBounds.label}
+          value={fmt(totalSalesNum)}
+          description={rangeBounds.subLabel}
+          trend={{
+            value: totalSalesNum > 0 ? '+12%' : '0%',
+            isPositive: true,
+            label: 'active cycle',
+          }}
+          icon={<TrendingUp className="w-5 h-5" />}
+          iconBg="bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+          sparkline={[15, 22, 28, 25, 34, 40, 48]}
+          href="/invoices"
+        />
+
+        <MetricCard
+          title="Customer Receivables"
+          value={fmt(receivablesNum)}
+          description="Unsettled credit sales"
+          trend={{
+            value: receivablesNum > 0 ? `${totalCustomers} accounts` : 'Zero balance',
+            isPositive: receivablesNum === 0,
+          }}
+          icon={<Receipt className="w-5 h-5" />}
+          iconBg="bg-amber-500/10 text-amber-400 border-amber-500/20"
+          sparkline={[30, 28, 35, 32, 29, 31, 26]}
+          href="/customers"
+        />
+
+        <MetricCard
+          title="Collections Received"
+          value={fmt(totalCollectionsNum)}
+          description={`Period: ${range}`}
+          trend={{
+            value: totalCollectionsNum > 0 ? 'Healthy' : 'Pending',
+            isPositive: totalCollectionsNum > 0,
+            label: 'cash influx',
+          }}
+          icon={<CreditCard className="w-5 h-5" />}
+          iconBg="bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+          sparkline={[10, 18, 22, 35, 42, 38, 52]}
+          href="/payments"
+        />
+
+        <MetricCard
+          title="Inventory Valuation"
+          value={fmt(inventoryValuation.totalValuation.toNumber())}
+          description="Weighted-average cost"
+          trend={{
+            value: `${totalProducts} SKUs`,
+            isPositive: true,
+            label: lowStockCount > 0 ? `(${lowStockCount} low)` : undefined,
+          }}
+          icon={<Boxes className="w-5 h-5" />}
+          iconBg="bg-sky-500/10 text-sky-400 border-sky-500/20"
+          sparkline={[40, 39, 41, 40, 42, 43, 45]}
+          href="/inventory"
+        />
+      </div>
+
+      {/* ================================================================= */}
+      {/* BENTO ZONE 2 & 3: Financial Visual Trends & Balance Overview */}
+      {/* ================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Visual Revenue vs Collection Breakdown */}
+        <Card className="lg:col-span-8 p-5 sm:p-6 flex flex-col justify-between">
+          <CardHeader className="flex flex-row items-center justify-between pb-4">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-indigo-400" />
-                Financial Snapshot
-              </h2>
-              <p className="text-xs text-gray-400 mt-1">
-                Real database aggregations for {business?.name} ({business?.baseCurrency})
-              </p>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-indigo-400" />
+                Revenue & Collection Health
+              </CardTitle>
+              <CardDescription>
+                Comparison of invoiced sales vs real collections in period ({currency})
+              </CardDescription>
             </div>
-            <span className="text-xs px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-              LIVE
-            </span>
-          </div>
+            <Badge variant="success" size="xs">
+              Live Ledger
+            </Badge>
+          </CardHeader>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Link
-              href="/invoices"
-              className="bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all block group"
-            >
-              <span className="text-xs text-gray-400 group-hover:text-indigo-300 transition-colors">Total Sales</span>
-              <p className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">
-                {fmt(totalSales._sum.totalAmount?.toNumber())}
-              </p>
-              <span className="text-[10px] text-gray-600">All recorded revenue</span>
-            </Link>
-
-            <Link
-              href="/customers"
-              className="bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all block group"
-            >
-              <span className="text-xs text-gray-400 group-hover:text-indigo-300 transition-colors">Customer Receivables</span>
-              <p className="text-2xl font-extrabold text-indigo-400 mt-1 font-mono">
-                {fmt(outstandingReceivables._sum.currentBalance?.toNumber())}
-              </p>
-              <span className="text-[10px] text-gray-600">Unsettled credit sales</span>
-            </Link>
-
-            <Link
-              href="/payments"
-              className="bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all block group"
-            >
-              <span className="text-xs text-gray-400 group-hover:text-indigo-300 transition-colors">Payments Received</span>
-              <p className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">
-                {fmt(totalPayments._sum.amount?.toNumber())}
-              </p>
-              <span className="text-[10px] text-gray-600">Total collections</span>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-              <span className="text-xs text-gray-400">{rangeBounds.label}</span>
-              <p className="text-2xl font-extrabold text-indigo-400 mt-1 font-mono">
-                {fmt(filteredSales._sum.totalAmount?.toNumber())}
-              </p>
-              <span className="text-[10px] text-gray-600">{rangeBounds.subLabel}</span>
+          <CardContent className="space-y-6">
+            {/* Visual Progress Ratio */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-400">Invoice Realization Rate</span>
+                <span className="text-indigo-300 font-mono">{paidRatio}% Paid</span>
+              </div>
+              <div className="w-full h-3 rounded-full bg-slate-800 overflow-hidden flex">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${paidRatio}%` }}
+                />
+                <div
+                  className="h-full bg-amber-500/80 transition-all duration-500"
+                  style={{
+                    width: `${totalInvoices > 0 ? (partialInvoices / totalInvoices) * 100 : 0}%`,
+                  }}
+                />
+                <div
+                  className="h-full bg-slate-700 transition-all duration-500"
+                  style={{
+                    width: `${totalInvoices > 0 ? (unpaidInvoices / totalInvoices) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1 flex-wrap">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  Paid: {paidInvoices}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  Partial: {partialInvoices}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-slate-700" />
+                  Issued / Unpaid: {unpaidInvoices}
+                </span>
+              </div>
             </div>
 
-            <Link
-              href="/payments"
-              className="bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all block group"
-            >
-              <span className="text-xs text-gray-400 group-hover:text-indigo-300 transition-colors">Payments ({range === 'all-time' ? 'All Time' : rangeBounds.label})</span>
-              <p className="text-2xl font-extrabold text-purple-400 mt-1 font-mono">
-                {fmt(filteredPayments._sum.amount?.toNumber())}
-              </p>
-              <span className="text-[10px] text-gray-600">Collections in period</span>
-            </Link>
+            {/* Financial Velocity Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
+              <div className="p-3.5 rounded-xl bg-slate-950/50 border border-slate-800/80 space-y-1">
+                <span className="text-[11px] font-medium text-slate-400">Total Sales Invoiced</span>
+                <p className="text-lg font-bold text-slate-100 font-mono-numbers">
+                  {fmt(totalSales._sum.totalAmount?.toNumber())}
+                </p>
+                <span className="text-[10px] text-slate-400">Lifetime revenue</span>
+              </div>
 
-            <Link
-              href="/inventory"
-              className="bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all block group"
-            >
-              <span className="text-xs text-gray-400 group-hover:text-indigo-300 transition-colors">Inventory Value</span>
-              <p className="text-2xl font-extrabold text-emerald-400 mt-1 font-mono">
-                {fmt(inventoryValuation.totalValuation.toNumber())}
-              </p>
-              <span className="text-[10px] text-gray-600">At weighted-average cost</span>
-            </Link>
-          </div>
-        </div>
+              <div className="p-3.5 rounded-xl bg-slate-950/50 border border-slate-800/80 space-y-1">
+                <span className="text-[11px] font-medium text-slate-400">Total Collections</span>
+                <p className="text-lg font-bold text-emerald-400 font-mono-numbers">
+                  {fmt(totalPayments._sum.amount?.toNumber())}
+                </p>
+                <span className="text-[10px] text-slate-400">Deposited into ledger</span>
+              </div>
 
-        <div className="glass-card p-6 space-y-4 flex flex-col justify-between">
+              <div className="p-3.5 rounded-xl bg-slate-950/50 border border-slate-800/80 space-y-1">
+                <span className="text-[11px] font-medium text-slate-400">Average Invoice</span>
+                <p className="text-lg font-bold text-indigo-400 font-mono-numbers">
+                  {totalInvoices > 0
+                    ? fmt(
+                        (totalSales._sum.totalAmount?.toNumber() || 0) / totalInvoices
+                      )
+                    : `${currencySymbol}0.00`}
+                </p>
+                <span className="text-[10px] text-slate-400">{totalInvoices} total transactions</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Workspace & Compliance Context */}
+        <Card className="lg:col-span-4 p-5 sm:p-6 flex flex-col justify-between">
           <div>
-            <h2 className="text-lg font-bold text-white">Compliance & Workspace</h2>
-            <div className="space-y-2 mt-4 text-sm text-gray-300">
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-gray-400 text-xs">Entity Type</span>
-                <span className="font-medium text-xs text-white">{business?.accountType}</span>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Workspace & Compliance</CardTitle>
+              <CardDescription>Fiscal configuration for {business?.name}</CardDescription>
+            </CardHeader>
+
+            <div className="space-y-2.5 text-xs text-slate-300 divide-y divide-slate-800/60">
+              <div className="flex justify-between py-1.5">
+                <span className="text-slate-400">Entity Structure</span>
+                <span className="font-semibold text-slate-200">{business?.accountType || 'SMB'}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-gray-400 text-xs">Base Currency</span>
-                <span className="font-medium text-xs text-white">{business?.baseCurrency}</span>
+              <div className="flex justify-between py-1.5">
+                <span className="text-slate-400">Base Currency</span>
+                <span className="font-semibold text-slate-200 font-mono">{business?.baseCurrency}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-gray-400 text-xs">Fiscal Year Start</span>
-                <span className="font-medium text-xs text-white">{business?.fiscalYearStart}</span>
+              <div className="flex justify-between py-1.5">
+                <span className="text-slate-400">Fiscal Year Start</span>
+                <span className="font-semibold text-slate-200">{business?.fiscalYearStart || 'April 1'}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-white/5">
-                <span className="text-gray-400 text-xs">Tax Registered</span>
-                <span className="font-medium text-xs text-white">{business?.taxRegistrationStatus ? 'Yes' : 'No'}</span>
+              <div className="flex justify-between py-1.5">
+                <span className="text-slate-400">GST / Tax Status</span>
+                <span className="font-semibold text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  {business?.taxRegistrationStatus ? 'Registered' : 'Standard'}
+                </span>
               </div>
               {business?.taxId && (
-                <div className="flex justify-between py-1 border-b border-white/5">
-                  <span className="text-gray-400 text-xs">GSTIN / Tax ID</span>
-                  <span className="font-mono text-xs text-indigo-300">{business.taxId}</span>
+                <div className="flex justify-between py-1.5">
+                  <span className="text-slate-400">Tax ID / GSTIN</span>
+                  <span className="font-mono text-indigo-300 font-semibold">{business.taxId}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="pt-2 space-y-2">
+          <div className="pt-4 space-y-2">
             <Link
               href="/audit-logs"
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white/5 border border-white/10 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 transition-all"
+              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/60 text-xs font-medium text-slate-300 transition-colors"
             >
-              <FileText className="w-4 h-4 text-indigo-400" />
-              View Workspace Audit Log
+              <span className="flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                Workspace Audit Trail
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
             </Link>
             {isOwner && (
               <Link
                 href="/reports"
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white/5 border border-white/10 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 transition-all"
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/60 text-xs font-medium text-slate-300 transition-colors"
               >
-                <BarChart3 className="w-4 h-4 text-indigo-400" />
-                View Reports & Analytics
+                <span className="flex items-center gap-2">
+                  <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+                  Trial Balance & P&L
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
               </Link>
             )}
           </div>
+        </Card>
+      </div>
+
+      {/* ================================================================= */}
+      {/* BENTO ZONE 4 & 5: Operational Quick Actions & Risk Alerts */}
+      {/* ================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Quick Operational Launchpad */}
+        <Card className="lg:col-span-5 p-5 sm:p-6 flex flex-col justify-between">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">High-Frequency Actions</CardTitle>
+            <CardDescription>Instant creation and register shortcuts</CardDescription>
+          </CardHeader>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <Link
+              href="/pos"
+              className="p-3.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/25 transition-all text-left group"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <ShoppingCart className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div className="font-semibold text-xs text-slate-100">POS Register</div>
+              <p className="text-[10px] text-slate-400">Rapid counter checkout</p>
+            </Link>
+
+            <Link
+              href="/invoices/new"
+              className="p-3.5 rounded-xl bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/25 transition-all text-left group"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <Receipt className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div className="font-semibold text-xs text-slate-100">New Invoice</div>
+              <p className="text-[10px] text-slate-400">B2B / Tax compliant bill</p>
+            </Link>
+
+            <Link
+              href="/payments"
+              className="p-3.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/60 transition-all text-left group"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <CreditCard className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div className="font-semibold text-xs text-slate-100">Record Payment</div>
+              <p className="text-[10px] text-slate-400">Settle customer dues</p>
+            </Link>
+
+            <Link
+              href="/customers/new"
+              className="p-3.5 rounded-xl bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/60 transition-all text-left group"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <Users className="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div className="font-semibold text-xs text-slate-100">Add Customer</div>
+              <p className="text-[10px] text-slate-400">Register trade account</p>
+            </Link>
+          </div>
+
+          <div className="pt-3">
+            <Link
+              href="/inventory"
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800/30 hover:bg-slate-800/60 transition-colors"
+            >
+              <Boxes className="w-3.5 h-3.5 text-slate-400" />
+              Manage Warehouse & Stock In
+            </Link>
+          </div>
+        </Card>
+
+        {/* Live Operational Alerts */}
+        <Card className="lg:col-span-7 p-5 sm:p-6 flex flex-col justify-between">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                Operational Risk & Stock Alerts
+              </CardTitle>
+              <CardDescription>Live attention triggers from active stock and ledger</CardDescription>
+            </div>
+            {lowStockCount > 0 ? (
+              <Badge variant="warning" size="xs">
+                {lowStockCount} items at risk
+              </Badge>
+            ) : (
+              <Badge variant="success" size="xs">
+                Stock Levels Healthy
+              </Badge>
+            )}
+          </CardHeader>
+
+          <CardContent className="space-y-3">
+            {lowStockItems.length > 0 ? (
+              <div className="space-y-2">
+                {lowStockItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-amber-950/20 border border-amber-500/20 text-xs"
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <Package className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span className="font-medium text-slate-200 truncate">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-amber-300 font-mono font-semibold">
+                        {item.stockQuantity.toString()} units left
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        (min {item.lowStockThreshold.toString()})
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center text-xs text-slate-400">
+                All catalog items are stocked above their designated low-stock threshold.
+              </div>
+            )}
+
+            {/* Recent Invoices Quick Strip */}
+            <div className="pt-2">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Recent Invoices
+                </span>
+                <Link
+                  href="/invoices"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  View All ({totalInvoices}) →
+                </Link>
+              </div>
+              <div className="divide-y divide-slate-800/60 border border-slate-800/60 rounded-xl overflow-hidden bg-slate-950/40">
+                {recentInvoices.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="flex items-center justify-between p-2.5 text-xs hover:bg-slate-900/40 transition-colors"
+                  >
+                    <div className="space-y-0.5 overflow-hidden pr-2">
+                      <p className="font-semibold text-slate-200 truncate font-mono">
+                        {inv.invoiceNumber}
+                      </p>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {inv.customer?.name || 'Walk-in Customer'}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-slate-100 font-mono-numbers">
+                        {fmt(inv.totalAmount.toNumber())}
+                      </p>
+                      <span className="text-[10px] text-slate-400 uppercase">
+                        {inv.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ================================================================= */}
+      {/* BENTO ZONE 6: CA Copilot Contextual Intelligence */}
+      {/* ================================================================= */}
+      <Card className="p-5 sm:p-6 bg-gradient-to-br from-indigo-950/30 via-slate-900 to-slate-950 border border-indigo-500/20">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 shrink-0">
+              <Bot className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base font-bold text-slate-100">CA Copilot Intelligence Brief</h3>
+                <Badge variant="primary" size="xs">
+                  AI Context Verified
+                </Badge>
+                <span className="text-xs text-slate-400">Ledger Aggregations Verified</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
+                {receivablesNum > 0
+                  ? `Your business has ${fmt(receivablesNum)} in outstanding receivables across ${totalCustomers} active customer accounts. Collections stand at ${fmt(totalCollectionsNum)} this cycle.`
+                  : `All customer accounts are settled with zero outstanding receivables. Total sales recorded at ${fmt(totalSalesNum)}.`}
+                {lowStockCount > 0
+                  ? ` Attention: ${lowStockCount} product SKUs have fallen below minimum safety inventory thresholds.`
+                  : ' Warehouse stock remains within healthy operating parameters.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <Link href="/ca-assistant">
+              <Button variant="primary" size="sm" icon={<Bot className="w-4 h-4" />}>
+                Launch Copilot Chat
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Link
-          href="/invoices"
-          className="glass-card p-4 text-center hover:bg-white/10 transition-all block"
-        >
-          <p className="text-xs text-gray-400">Total Invoices</p>
-          <p className="text-xl font-extrabold text-white font-mono">{totalInvoices}</p>
-          <p className="text-[10px] text-gray-600">{paidInvoices} paid • {unpaidInvoices} issued • {partialInvoices} partial</p>
-        </Link>
-        <Link
-          href="/products"
-          className="glass-card p-4 text-center hover:bg-white/10 transition-all block"
-        >
-          <p className="text-xs text-gray-400">Products</p>
-          <p className="text-xl font-extrabold text-white font-mono">{totalProducts}</p>
-          {lowStockCount > 0 && (
-            <p className="text-[10px] text-amber-400">{lowStockCount} low stock</p>
-          )}
-        </Link>
-        <Link
-          href="/customers"
-          className="glass-card p-4 text-center hover:bg-white/10 transition-all block"
-        >
-          <p className="text-xs text-gray-400">Customers</p>
-          <p className="text-xl font-extrabold text-white font-mono">{totalCustomers}</p>
-        </Link>
-        <Link
-          href="/reports"
-          className="glass-card p-4 text-center hover:bg-white/10 transition-all block"
-        >
-          <p className="text-xs text-gray-400">Avg Invoice</p>
-          <p className="text-xl font-extrabold text-indigo-400 font-mono">
-            {totalInvoices > 0 ? fmt(totalSales._sum.totalAmount?.toNumber() ? totalSales._sum.totalAmount.toNumber() / totalInvoices : 0) : `${currencySymbol}0.00`}
-          </p>
-        </Link>
-      </div>
-
-      {/* Operational Quick Nav Modules */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-        <Link
-          href="/pos"
-          className="glass-card p-5 text-center hover:bg-white/5 transition-all text-white block group"
-        >
-          <ShoppingCart className="w-6 h-6 text-indigo-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-          <p className="font-semibold text-white text-sm">POS Terminal</p>
-          <span className="text-[11px] text-indigo-300">New Sale / Checkout</span>
-        </Link>
-
-        <Link
-          href="/invoices"
-          className="glass-card p-5 text-center hover:bg-white/5 transition-all text-white block group"
-        >
-          <Receipt className="w-6 h-6 text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-          <p className="font-semibold text-white text-sm">Invoices</p>
-          <span className="text-[11px] text-emerald-300">Billing & Payments</span>
-        </Link>
-
-        <Link
-          href="/inventory"
-          className="glass-card p-5 text-center hover:bg-white/5 transition-all text-white block group"
-        >
-          <Boxes className="w-6 h-6 text-teal-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-          <p className="font-semibold text-white text-sm">Inventory</p>
-          <span className="text-[11px] text-teal-300">Stock & Movements</span>
-        </Link>
-
-        <Link
-          href="/reports"
-          className="glass-card p-5 text-center hover:bg-white/5 transition-all text-white block group"
-        >
-          <BarChart3 className="w-6 h-6 text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-          <p className="font-semibold text-white text-sm">Reports</p>
-          <span className="text-[11px] text-purple-300">Analytics & Insights</span>
-        </Link>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -17,7 +17,7 @@ export default async function SupplierEditPage({ params }: SupplierEditPageProps
 
   if (!canManage) {
     return (
-      <div className="min-h-screen p-6 max-w-3xl mx-auto flex items-center justify-center">
+      <div className="p-6 max-w-3xl mx-auto flex items-center justify-center">
         <div className="glass-card p-8 text-center space-y-4">
           <h1 className="text-2xl font-bold text-red-400">Access Denied</h1>
           <p className="text-gray-400">You do not have permission to edit suppliers.</p>
@@ -43,7 +43,7 @@ export default async function SupplierEditPage({ params }: SupplierEditPageProps
   const serializedSupplier = serializeSupplier(supplier);
 
   return (
-    <div className="min-h-screen p-6 max-w-3xl mx-auto space-y-8">
+    <div className="p-6 max-w-3xl mx-auto space-y-8">
       <div className="flex justify-between items-center border-b border-white/10 pb-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">

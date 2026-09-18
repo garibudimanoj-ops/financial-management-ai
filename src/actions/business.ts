@@ -28,6 +28,10 @@ const onboardingSchema = z.object({
  */
 export async function onboardBusiness(formData: z.infer<typeof onboardingSchema>) {
   const user = await requireAuth();
+
+  console.log(
+    `[Onboarding] Starting business setup for Prisma User: ${user.id}`
+  );
   const parsed = onboardingSchema.parse(formData);
 
   const result = await prisma.$transaction(async (tx) => {
@@ -60,6 +64,10 @@ export async function onboardBusiness(formData: z.infer<typeof onboardingSchema>
 
     return { business, member };
   });
+
+  console.log(
+    `[Onboarding] Business created: ${result.business.id}; OWNER membership created: ${result.member.id}`
+  );
 
   // Set the newly created business as active in cookie
   const cookieStore = await cookies();

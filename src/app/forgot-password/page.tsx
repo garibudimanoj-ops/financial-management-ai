@@ -5,13 +5,13 @@ import { requestPasswordReset } from '@/actions/auth';
 import Link from 'next/link';
 
 export default function ForgotPasswordPage() {
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
+    setMessage(null);
     setSuccess(false);
     setLoading(true);
 
@@ -21,8 +21,14 @@ export default function ForgotPasswordPage() {
     try {
       await requestPasswordReset({ email });
       setSuccess(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setMessage('Reset instructions have been sent to your email.');
+    } catch (err: unknown) {
+      // Preserve Next.js redirect exceptions; don't swallow NEXT_REDIRECT
+      if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
+        throw err;
+      }
+      setMessage(err instanceof Error ? err.message : 'Something went wrong');
+      setSuccess(false);
     } finally {
       setLoading(false);
     }
@@ -38,25 +44,21 @@ export default function ForgotPasswordPage() {
           <p className="text-sm text-gray-400 mt-2">Request reset link for your account</p>
         </div>
 
-        {error && (
-          <div className="bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="bg-emerald-900/30 border border-emerald-500/50 text-emerald-200 px-4 py-3 rounded-lg text-sm">
-            Reset instructions have been sent to your email.
+        {message && (
+          <div className={`px-4 py-3 rounded-lg text-sm ${success ? 'bg-emerald-900/30 border border-emerald-500/50 text-emerald-200' : 'bg-red-900/30 border border-red-500/50 text-red-200'}`}>
+            {message}
           </div>
         )}
 
         {!success && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
               <input
+                id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 className="w-full glass-input px-4 py-3 rounded-lg text-sm"
                 placeholder="you@example.com"

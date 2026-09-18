@@ -3,9 +3,9 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { finalizeSaleAction } from '@/actions/invoice';
 import { listProducts } from '@/actions/product';
+import Link from 'next/link';
 import { getTaxRateForCategory } from '@/lib/invoices/calculations';
 import { getStockWarning } from '@/lib/pos/stockWarning';
-import Link from 'next/link';
 import { Search, Plus, Minus, Trash2, ShoppingCart, User, CreditCard, Banknote, Smartphone, X, Check, AlertCircle, Wallet } from 'lucide-react';
 
 interface Product {
@@ -116,6 +116,10 @@ export default function POSTerminal({ businessId, businessName, currency, produc
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   const currencySymbol = currency === 'INR' ? '₹' : '$';
+  const safeFmt = (val: number | string | null | undefined): string => {
+    const num = Number(val ?? 0);
+    return (Number.isFinite(num) ? num : 0).toFixed(2);
+  };
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
@@ -485,7 +489,7 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                       <div className="mt-3 flex items-end justify-between">
                         <div>
                           <p className="text-lg font-extrabold text-indigo-400 font-mono">
-                            {currencySymbol}{sellPrice.toFixed(2)}
+                            {currencySymbol}{safeFmt(sellPrice)}
                           </p>
                           <p className="text-[10px] text-gray-500">
                             {stockNum} {product.unit} left
@@ -564,7 +568,7 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-white font-mono text-sm">
-                        {currencySymbol}{(item.quantity * item.unitPrice).toFixed(2)}
+                        {currencySymbol}{safeFmt(item.quantity * item.unitPrice)}
                       </p>
                     </div>
                   </div>
@@ -605,7 +609,7 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-300">
                   <span>Subtotal</span>
-                  <span className="font-mono">{currencySymbol}{subtotal.toFixed(2)}</span>
+                  <span className="font-mono">{currencySymbol}{safeFmt(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-300 items-center gap-2">
                   <span>Discount</span>
@@ -620,11 +624,11 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                 </div>
                 <div className="flex justify-between text-gray-300">
                   <span>Tax</span>
-                  <span className="font-mono">{currencySymbol}{taxAmount.toFixed(2)}</span>
+                  <span className="font-mono">{currencySymbol}{safeFmt(taxAmount)}</span>
                 </div>
                 <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-white/10">
                   <span>Total</span>
-                  <span className="font-mono">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                  <span className="font-mono">{currencySymbol}{safeFmt(grandTotal)}</span>
                 </div>
               </div>
 
@@ -656,7 +660,7 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                 Checkout
               </h2>
               <p className="text-xs text-gray-400 mt-1">
-                Total: {currencySymbol}{grandTotal.toFixed(2)}
+                Total: {currencySymbol}{safeFmt(grandTotal)}
               </p>
             </div>
 
@@ -696,8 +700,8 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                 </div>
                 {selectedCustomer && (
                   <p className="text-xs text-gray-400 mt-1">
-                    Balance: {currencySymbol}{Number(selectedCustomer.currentBalance).toFixed(2)}
-                    {selectedCustomer.creditLimit ? ` | Limit: ${currencySymbol}${Number(selectedCustomer.creditLimit).toFixed(2)}` : ''}
+                    Balance: {currencySymbol}{safeFmt(Number(selectedCustomer.currentBalance))}
+                    {selectedCustomer.creditLimit ? ` | Limit: ${currencySymbol}${safeFmt(Number(selectedCustomer.creditLimit))}` : ''}
                   </p>
                 )}
               </div>
@@ -778,7 +782,7 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                   />
                   {Number(cashReceived) >= grandTotal && (
                     <p className="text-xs text-emerald-400 mt-1">
-                      Change: {currencySymbol}{change.toFixed(2)}
+                      Change: {currencySymbol}{safeFmt(change)}
                     </p>
                   )}
                 </div>
@@ -861,19 +865,19 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                     <div className="p-2 rounded-lg bg-white/5 border border-white/10">
                       <p className="text-gray-400">Total Paid</p>
                       <p className="font-mono font-bold text-emerald-400">
-                        {currencySymbol}{totalPaid.toFixed(2)}
+                        {currencySymbol}{safeFmt(totalPaid)}
                       </p>
                     </div>
                     <div className="p-2 rounded-lg bg-white/5 border border-white/10">
                       <p className="text-gray-400">Remaining</p>
                       <p className="font-mono font-bold text-amber-400">
-                        {currencySymbol}{remaining.toFixed(2)}
+                        {currencySymbol}{safeFmt(remaining)}
                       </p>
                     </div>
                     <div className="p-2 rounded-lg bg-white/5 border border-white/10">
                       <p className="text-gray-400">Overpayment</p>
                       <p className="font-mono font-bold text-red-400">
-                        {currencySymbol}{overpayment.toFixed(2)}
+                        {currencySymbol}{safeFmt(overpayment)}
                       </p>
                     </div>
                   </div>
@@ -882,11 +886,11 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                     <div className="flex items-center justify-between text-xs px-1">
                       <span className="text-gray-400">Cash tendered</span>
                       <span className="font-mono text-white">
-                        {currencySymbol}{splitCash.toFixed(2)}
+                        {currencySymbol}{safeFmt(splitCash)}
                       </span>
                       <span className="text-gray-400">Change</span>
                       <span className={`font-mono font-bold ${splitChangeRounded > 0 ? 'text-emerald-400' : 'text-gray-500'}`}>
-                        {currencySymbol}{splitChangeRounded.toFixed(2)}
+                        {currencySymbol}{safeFmt(splitChangeRounded)}
                       </span>
                     </div>
                   )}
@@ -912,7 +916,7 @@ const updateCartQuantity = useCallback((productId: string, delta: number) => {
                 disabled={loading || (paymentMode === 'split' && !splitValid)}
                 className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl text-white font-bold shadow-lg hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading ? 'Processing...' : `Pay ${currencySymbol}${grandTotal.toFixed(2)}`}
+                {loading ? 'Processing...' : `Pay ${currencySymbol}${safeFmt(grandTotal)}`}
               </button>
             </div>
           </div>

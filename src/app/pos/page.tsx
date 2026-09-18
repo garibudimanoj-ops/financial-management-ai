@@ -9,7 +9,7 @@ export default async function POSPage() {
 
   if (!canManage) {
     return (
-      <div className="min-h-screen p-6 max-w-7xl mx-auto flex items-center justify-center">
+      <div className="p-6 max-w-7xl mx-auto flex items-center justify-center">
         <div className="glass-card p-8 text-center space-y-4">
           <h1 className="text-2xl font-bold text-red-400">Access Denied</h1>
           <p className="text-gray-400">You do not have permission to access the POS terminal.</p>

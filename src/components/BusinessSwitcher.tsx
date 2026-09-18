@@ -69,9 +69,15 @@ export default function BusinessSwitcher({ currentBusinessId, businesses }: Busi
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-72 rounded-xl bg-[#12141f] border border-white/15 shadow-2xl p-2 z-50 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="px-3 py-2 border-b border-white/10 mb-1">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Workspaces</span>
+        <div className="absolute left-0 mt-2 w-72 rounded-xl border shadow-2xl p-2 z-50 backdrop-blur-xl dropdown-enter"
+          style={{
+            background: 'rgba(14, 18, 30, 0.97)',
+            borderColor: 'rgba(255,255,255,0.12)',
+            boxShadow: '0 12px 40px -4px rgba(0,0,0,0.7)',
+          }}
+        >
+          <div className="px-3 py-2 border-b mb-1" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Your Workspaces</span>
           </div>
 
           <div className="max-h-60 overflow-y-auto space-y-1 py-1">
@@ -85,12 +91,15 @@ export default function BusinessSwitcher({ currentBusinessId, businesses }: Busi
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-all ${
                     isSelected
                       ? 'bg-indigo-600/20 text-white font-medium border border-indigo-500/30'
-                      : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                      : 'text-slate-300 hover:text-white'
                   }`}
+                  style={!isSelected ? { '--hover-bg': 'rgba(255,255,255,0.05)' } as React.CSSProperties : {}}
+                  onMouseEnter={e => !isSelected && ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseLeave={e => !isSelected && ((e.currentTarget as HTMLElement).style.background = '')}
                 >
                   <div className="min-w-0 pr-2">
                     <p className="truncate font-medium">{biz.name}</p>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-slate-400">
                       {biz.role} • {biz.city}, {biz.country}
                     </span>
                   </div>
@@ -100,11 +109,14 @@ export default function BusinessSwitcher({ currentBusinessId, businesses }: Busi
             })}
           </div>
 
-          <div className="pt-2 border-t border-white/10 mt-1">
+          <div className="pt-2 border-t mt-1" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
             <Link
               href="/onboarding"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-indigo-400 hover:bg-indigo-600/10 hover:text-indigo-300 rounded-lg transition-all"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-indigo-400 hover:text-indigo-300 rounded-lg transition-all"
+              style={{ transition: 'background 0.15s' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.1)')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = '')}
             >
               <Plus className="w-4 h-4" />
               <span>Create New Business</span>

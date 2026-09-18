@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/error-boundaries */
 import { requireBusinessContext } from '@/lib/auth';
 import { getTrialBalance } from '@/services/accounting/reportService';
 import { prisma } from '@/lib/prisma';
@@ -5,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Scale, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default async function TrialBalancePage() {
+  try {
   const context = await requireBusinessContext();
   const [report, business] = await Promise.all([
     getTrialBalance(context.businessId),
@@ -24,7 +26,7 @@ export default async function TrialBalancePage() {
   const diff = Math.abs(Number(report.totalDebits) - Number(report.totalCredits));
 
   return (
-    <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-8">
+    <div className="p-6 max-w-6xl mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
         <div>
           <div className="flex items-center gap-2">
@@ -123,4 +125,15 @@ export default async function TrialBalancePage() {
       </div>
     </div>
   );
+  } catch (err: unknown) {
+    console.error('[Trial Balance] Error:', err);
+    return (
+      <div className="max-w-4xl mx-auto py-16 flex items-center justify-center">
+        <div className="glass-card p-8 text-center space-y-4 max-w-md">
+          <h1 className="text-xl font-bold text-white">Report Unavailable</h1>
+          <p className="text-sm text-slate-400">Unable to generate trial balance. Please retry or contact support.</p>
+        </div>
+      </div>
+    );
+  }
 }

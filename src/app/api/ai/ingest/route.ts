@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { extractBusinessId } from '@/lib/utils';
 import { Prisma } from '@prisma/client';
 
 type DraftTransactionResponse = Prisma.TransactionGetPayload<{
@@ -30,7 +31,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   }
 
   const body = await req.json();
-  const requestedBusinessId = body.businessId || body.companyId;
+  const { businessId: requestedBusinessId } = extractBusinessId(req, body);
   const context = await requirePermission(requestedBusinessId, 'AI_FINANCIAL_READ');
   const { businessId, userId } = context;
 

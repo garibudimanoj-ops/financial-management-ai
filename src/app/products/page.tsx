@@ -4,7 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { serializeProduct } from '@/lib/serialize';
 import ProductList from '@/components/products/ProductList';
 import Link from 'next/link';
-import { Package, Boxes, ArrowLeft } from 'lucide-react';
+import { Package, Boxes, Plus } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import Button from '@/components/ui/Button';
 
 export default async function ProductsPage() {
   const context = await requireBusinessContext();
@@ -22,43 +24,32 @@ export default async function ProductsPage() {
   ]);
 
   const currency = business?.baseCurrency || 'INR';
-
   const formattedProducts = products.map(serializeProduct);
 
   return (
-    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
-        <div>
-          <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-            <Package className="w-8 h-8 text-indigo-400" />
-            Product Catalog
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Manage your SKU catalog, pricing, barcodes, and stock levels
-          </p>
-        </div>
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title="Product & SKU Catalog"
+        subtitle="Manage product pricing, barcodes, taxation rates, and inventory thresholds"
+        icon={<Package className="w-5 h-5" />}
+        actions={
+          <div className="flex items-center gap-2.5">
+            <Link href="/inventory">
+              <Button variant="secondary" size="sm" icon={<Boxes className="w-4 h-4" />}>
+                Warehouse Stock
+              </Button>
+            </Link>
+            {canManage && (
+              <Link href="/products/new">
+                <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />}>
+                  Add Product
+                </Button>
+              </Link>
+            )}
+          </div>
+        }
+      />
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/inventory"
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-all text-gray-300"
-          >
-            <Boxes className="w-4 h-4 text-emerald-400" />
-            Inventory Hub
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium hover:bg-white/10 transition-all text-white"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Dashboard
-          </Link>
-        </div>
-      </div>
-
-      {/* Main Product List */}
       <ProductList
         businessId={context.businessId}
         currency={currency}
