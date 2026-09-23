@@ -31,8 +31,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const url = request.nextUrl.clone();
-  const path = url.pathname;
+  const path = request.nextUrl.pathname;
 
   const isAuthPage =
     path.startsWith('/login') ||
@@ -40,20 +39,47 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/forgot-password') ||
     path.startsWith('/reset-password');
 
-  // Let public landing page ('/') and API routes pass through
-  if (path === '/' || path.startsWith('/api/')) {
+  const isPublicPath =
+    path === '/' ||
+    path.startsWith('/api/') ||
+    path.startsWith('/auth/callback');
+
+  const protectedPrefixes = [
+    '/dashboard',
+    '/ca-assistant',
+    '/audit-logs',
+    '/reports',
+    '/inventory',
+    '/customers',
+    '/employees',
+    '/payments',
+    '/pos',
+    '/products',
+    '/expenses',
+    '/suppliers',
+    '/purchases',
+    '/settings',
+    '/onboarding',
+    '/invite',
+  ];
+
+  const isProtectedPath = protectedPrefixes.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+  );
+
+  if (isPublicPath || isAuthPage) {
+    if (user && isAuthPage) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+
     return supabaseResponse;
   }
 
-  if (!user && !isAuthPage) {
-    // Redirect unauthenticated requests to login
+  if (!user && isProtectedPath) {
+    const url = request.nextUrl.clone();
     url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
-
-  if (user && isAuthPage) {
-    // Redirect authenticated requests away from auth pages
-    url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
 

@@ -9,7 +9,6 @@ export async function GET() {
       status: 'ok',
       version: process.env.npm_package_version || 'unknown',
       db: 'ok',
-      environment: process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -19,7 +18,6 @@ export async function GET() {
       {
         status: 'degraded',
         db: 'blocked',
-        environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString(),
       },
       { status: 503 }

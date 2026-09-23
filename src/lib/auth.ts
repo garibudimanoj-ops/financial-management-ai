@@ -148,10 +148,10 @@ export async function requireBusinessContext(requestedBusinessId?: string): Prom
       orderBy: { createdAt: 'asc' },
     });
 
-    if (!defaultMembership) {
-      console.warn(`[Auth Warning] No active business membership found for Prisma User: ${user.id} (${user.email}) | Supabase ID: ${user.supabaseUserId}`);
-      throw new AppError('No business context: User has no active business membership', 'NOT_FOUND');
-    }
+      if (!defaultMembership) {
+        console.warn(`[Auth Warning] No active business membership found for Prisma User: ${user.id} (${user.email}) | Supabase ID: ${user.supabaseUserId}`);
+        throw new AppError('Forbidden: User has no active business membership', 'FORBIDDEN');
+      }
     targetBusinessId = defaultMembership.businessId;
   }
 

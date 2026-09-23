@@ -7,7 +7,7 @@ import { syncPrismaUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { AppError } from '@/lib/errors';
+import { AppError, handleActionError, type ErrorCode } from '@/lib/errors';
 
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -18,45 +18,50 @@ const authSchema = z.object({
  * Log in using email/password.
  */
 export async function login(formData: z.infer<typeof authSchema>) {
-  const parsed = authSchema.parse(formData);
+  try {
+    const parsed = authSchema.parse(formData);
 
-  const rateKey = `login:${parsed.email}`;
-  const isAllowed = checkRateLimit(rateKey, 5, 15 * 60000); // 5 attempts per 15 minutes
-  if (!isAllowed) {
-    console.warn(`[Auth Login] Rate limited for: ${parsed.email}`);
-    throw new AppError('Too many login attempts. Please try again later.', 'RATE_LIMITED');
-  }
+    const rateKey = `login:${parsed.email}`;
+    const isAllowed = checkRateLimit(rateKey, 5, 15 * 60000);
+    if (!isAllowed) {
+      console.warn(`[Auth Login] Rate limited for: ${parsed.email}`);
+      throw new AppError('Too many login attempts. Please try again later.', 'RATE_LIMITED');
+    }
 
-  const supabase = await createClient();
+    const supabase = await createClient();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: parsed.email,
-    password: parsed.password,
-  });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: parsed.email,
+      password: parsed.password,
+    });
 
-  if (error) {
-    console.error('[Auth Login] Supabase error:', error.message);
-    throw new AppError('Invalid email or password.', 'UNAUTHORIZED');
-  }
+    if (error) {
+      console.error('[Auth Login] Supabase error:', error.message);
+      throw new AppError('Invalid email or password.', 'UNAUTHORIZED');
+    }
 
-  const user = await syncPrismaUser(data.user);
+    const user = await syncPrismaUser(data.user);
 
-  console.log(`[Auth Login] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id} | Email: ${user.email}`);
+    console.log(`[Auth Login] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id} | Email: ${user.email}`);
 
-  await logAuditEvent({
-    action: 'USER_LOGIN',
-    userId: user.id,
-    details: { email: user.email },
-  });
+    await logAuditEvent({
+      action: 'USER_LOGIN',
+      userId: user.id,
+      details: { email: user.email },
+    });
 
-  const membership = await prisma.businessMember.findFirst({
-    where: { userId: user.id, status: 'ACTIVE' },
-  });
+    const membership = await prisma.businessMember.findFirst({
+      where: { userId: user.id, status: 'ACTIVE' },
+    });
 
-  if (membership) {
-    redirect('/dashboard');
-  } else {
-    redirect('/onboarding');
+    if (membership) {
+      redirect('/dashboard');
+    } else {
+      redirect('/onboarding');
+    }
+  } catch (err: unknown) {
+    const handled = handleActionError(err);
+    throw new AppError(handled.error, handled.code as ErrorCode);
   }
 }
 
@@ -64,48 +69,53 @@ export async function login(formData: z.infer<typeof authSchema>) {
  * Sign up using email/password.
  */
 export async function signup(formData: z.infer<typeof authSchema>) {
-  const parsed = authSchema.parse(formData);
+  try {
+    const parsed = authSchema.parse(formData);
 
-  const rateKey = `signup:${parsed.email}`;
-  const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000); // 3 signups per hour
-  if (!isAllowed) {
-    console.warn(`[Auth Signup] Rate limited for: ${parsed.email}`);
-    throw new AppError('Too many sign-up attempts. Please try again later.', 'RATE_LIMITED');
-  }
+    const rateKey = `signup:${parsed.email}`;
+    const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000);
+    if (!isAllowed) {
+      console.warn(`[Auth Signup] Rate limited for: ${parsed.email}`);
+      throw new AppError('Too many sign-up attempts. Please try again later.', 'RATE_LIMITED');
+    }
 
-  const supabase = await createClient();
+    const supabase = await createClient();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.email,
-    password: parsed.password,
-    options: {
-      emailRedirectTo: `${siteUrl}/auth/callback?next=/login`,
-    },
-  });
-
-  if (error) {
-    console.error('[Auth Signup] Supabase error:', error.message);
-    throw new AppError('Unable to create account. Please try again later.', 'UNAUTHORIZED');
-  }
-
-  if (data.user) {
-    const user = await syncPrismaUser(data.user);
-
-    console.log(`[Auth Signup] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id} | Email: ${user.email}`);
-
-    await logAuditEvent({
-      action: 'USER_SIGNUP',
-      userId: user.id,
-      details: { email: user.email, requiresConfirmation: !data.session },
+    const { data, error } = await supabase.auth.signUp({
+      email: parsed.email,
+      password: parsed.password,
+      options: {
+        emailRedirectTo: `${siteUrl}/auth/callback?next=/login`,
+      },
     });
-  }
 
-  if (data.session) {
-    redirect('/onboarding');
-  } else {
-    redirect('/login?message=check-email');
+    if (error) {
+      console.error('[Auth Signup] Supabase error:', error.message);
+      throw new AppError('Unable to create account. Please try again later.', 'UNAUTHORIZED');
+    }
+
+    if (data.user) {
+      const user = await syncPrismaUser(data.user);
+
+      console.log(`[Auth Signup] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id} | Email: ${user.email}`);
+
+      await logAuditEvent({
+        action: 'USER_SIGNUP',
+        userId: user.id,
+        details: { email: user.email, requiresConfirmation: !data.session },
+      });
+    }
+
+    if (data.session) {
+      redirect('/onboarding');
+    } else {
+      redirect('/login?message=check-email');
+    }
+  } catch (err: unknown) {
+    const handled = handleActionError(err);
+    throw new AppError(handled.error, handled.code as ErrorCode);
   }
 }
 

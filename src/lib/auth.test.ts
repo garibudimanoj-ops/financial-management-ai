@@ -151,7 +151,23 @@ describe('Auth & Multi-Tenant Helpers', () => {
     expect(context.membershipStatus).toBe('ACTIVE');
   });
 
-  it('should strictly reject access when user attempts to access a business where they have no membership (tenant isolation)', async () => {
+  it('should throw FORBIDDEN AppError when user has no active business membership (IDOR fix)', async () => {
+     vi.mocked(prisma.user.findUnique).mockResolvedValue({
+       id: 'user-no-membership',
+       supabaseUserId: 'real-supabase-uuid-123',
+       email: 'nomember@example.com',
+       name: 'No Member User',
+       createdAt: new Date(),
+       updatedAt: new Date(),
+     });
+
+     vi.mocked(prisma.businessMember.findFirst).mockResolvedValue(null);
+
+     await expect(requireBusinessContext()).rejects.toThrow(AppError);
+     await expect(requireBusinessContext()).rejects.toThrow('Forbidden: User has no active business membership');
+   });
+
+   it('should strictly reject access when user attempts to access a business where they have no membership (tenant isolation)', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'user-attacker',
       supabaseUserId: 'real-supabase-uuid-123',
