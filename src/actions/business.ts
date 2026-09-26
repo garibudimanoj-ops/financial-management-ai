@@ -34,7 +34,8 @@ export async function onboardBusiness(formData: z.infer<typeof onboardingSchema>
   );
   const parsed = onboardingSchema.parse(formData);
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(
+    async (tx) => {
     const business = await tx.business.create({
       data: {
         name: parsed.name,
@@ -62,8 +63,12 @@ export async function onboardBusiness(formData: z.infer<typeof onboardingSchema>
     // Auto-provision standard Chart of Accounts for new business
     await initializeChartOfAccounts(business.id, tx, business.baseCurrency);
 
-    return { business, member };
-  });
+      return { business, member };
+    },
+    {
+      timeout: 15000,
+    }
+  );
 
   console.log(
     `[Onboarding] Business created: ${result.business.id}; OWNER membership created: ${result.member.id}`

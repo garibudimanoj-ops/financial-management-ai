@@ -67,8 +67,12 @@ export async function updateSession(request: NextRequest) {
     (prefix) => path === prefix || path.startsWith(`${prefix}/`)
   );
 
+  const shouldRedirectAuthenticatedUser =
+    path.startsWith('/login') ||
+    path.startsWith('/signup');
+
   if (isPublicPath || isAuthPage) {
-    if (user && isAuthPage) {
+    if (user && shouldRedirectAuthenticatedUser) {
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard';
       return NextResponse.redirect(url);

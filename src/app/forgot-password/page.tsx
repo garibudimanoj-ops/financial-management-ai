@@ -18,24 +18,21 @@ export default function ForgotPasswordPage() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
 
-    try {
-      await requestPasswordReset({ email });
+    const result = await requestPasswordReset({ email });
+
+    if (!result.success) {
+      setMessage(result.error || 'An unexpected error occurred. Please try again.');
+      setSuccess(false);
+    } else {
       setSuccess(true);
       setMessage('Reset instructions have been sent to your email.');
-    } catch (err: unknown) {
-      // Preserve Next.js redirect exceptions; don't swallow NEXT_REDIRECT
-      if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
-        throw err;
-      }
-      setMessage(err instanceof Error ? err.message : 'Something went wrong');
-      setSuccess(false);
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="flex min-height-screen items-center justify-center p-6">
+    <div className="flex min-h-screen items-center justify-center p-6">
       <div className="glass-card w-full max-w-md p-8 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">

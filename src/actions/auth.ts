@@ -7,7 +7,6 @@ import { syncPrismaUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { AppError, handleActionError, type ErrorCode } from '@/lib/errors';
 
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -24,8 +23,8 @@ export async function login(formData: z.infer<typeof authSchema>) {
     const rateKey = `login:${parsed.email}`;
     const isAllowed = checkRateLimit(rateKey, 5, 15 * 60000);
     if (!isAllowed) {
-      console.warn(`[Auth Login] Rate limited for: ${parsed.email}`);
-      throw new AppError('Too many login attempts. Please try again later.', 'RATE_LIMITED');
+      console.warn('[Auth Login] Rate limited');
+      return { success: false, error: 'Too many login attempts. Please try again later.' };
     }
 
     const supabase = await createClient();
@@ -37,12 +36,12 @@ export async function login(formData: z.infer<typeof authSchema>) {
 
     if (error) {
       console.error('[Auth Login] Supabase error:', error.message);
-      throw new AppError('Invalid email or password.', 'UNAUTHORIZED');
+      return { success: false, error: 'Invalid email or password.' };
     }
 
     const user = await syncPrismaUser(data.user);
 
-    console.log(`[Auth Login] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id} | Email: ${user.email}`);
+    console.log(`[Auth Login] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id}`);
 
     await logAuditEvent({
       action: 'USER_LOGIN',
@@ -60,8 +59,11 @@ export async function login(formData: z.infer<typeof authSchema>) {
       redirect('/onboarding');
     }
   } catch (err: unknown) {
-    const handled = handleActionError(err);
-    throw new AppError(handled.error, handled.code as ErrorCode);
+    if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
+      throw err;
+    }
+    console.error('[Auth Login] Unexpected error:', err);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
   }
 }
 
@@ -75,8 +77,8 @@ export async function signup(formData: z.infer<typeof authSchema>) {
     const rateKey = `signup:${parsed.email}`;
     const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000);
     if (!isAllowed) {
-      console.warn(`[Auth Signup] Rate limited for: ${parsed.email}`);
-      throw new AppError('Too many sign-up attempts. Please try again later.', 'RATE_LIMITED');
+      console.warn('[Auth Signup] Rate limited');
+      return { success: false, error: 'Too many sign-up attempts. Please try again later.' };
     }
 
     const supabase = await createClient();
@@ -93,13 +95,13 @@ export async function signup(formData: z.infer<typeof authSchema>) {
 
     if (error) {
       console.error('[Auth Signup] Supabase error:', error.message);
-      throw new AppError('Unable to create account. Please try again later.', 'UNAUTHORIZED');
+      return { success: false, error: 'Unable to create account. Please try again later.' };
     }
 
     if (data.user) {
       const user = await syncPrismaUser(data.user);
 
-      console.log(`[Auth Signup] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id} | Email: ${user.email}`);
+      console.log(`[Auth Signup] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id}`);
 
       await logAuditEvent({
         action: 'USER_SIGNUP',
@@ -114,8 +116,11 @@ export async function signup(formData: z.infer<typeof authSchema>) {
       redirect('/login?message=check-email');
     }
   } catch (err: unknown) {
-    const handled = handleActionError(err);
-    throw new AppError(handled.error, handled.code as ErrorCode);
+    if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
+      throw err;
+    }
+    console.error('[Auth Signup] Unexpected error:', err);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
   }
 }
 
@@ -155,34 +160,40 @@ const resetRequestSchema = z.object({
  * Request password reset email.
  */
 export async function requestPasswordReset(formData: z.infer<typeof resetRequestSchema>) {
-  const parsed = resetRequestSchema.parse(formData);
+  try {
+    const parsed = resetRequestSchema.parse(formData);
 
-  const rateKey = `password-reset:${parsed.email}`;
-  const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000); // 3 reset requests per hour
-  if (!isAllowed) {
-    console.warn(`[Auth Reset Request] Rate limited for: ${parsed.email}`);
-    throw new AppError('Too many password reset requests. Please try again later.', 'RATE_LIMITED');
+    const rateKey = `password-reset:${parsed.email}`;
+    const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000); // 3 reset requests per hour
+    if (!isAllowed) {
+      console.warn('[Auth Reset Request] Rate limited');
+      return { success: false, error: 'Too many password reset requests. Please try again later.' };
+    }
+
+    const supabase = await createClient();
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.email, {
+      redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+    });
+
+    if (error) {
+      console.error('[Auth Reset Request] Supabase error:', error.message);
+      // Return generic message to avoid email enumeration
+      return { success: false, error: 'If the email exists, a reset link has been sent.' };
+    }
+
+    console.log('[Auth Reset Request] Reset email sent');
+
+    return { success: true };
+  } catch (err: unknown) {
+    if (err instanceof Error && (err.message?.includes('NEXT_REDIRECT') || (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))) {
+      throw err;
+    }
+    console.error('[Auth Reset Request] Unexpected error:', err);
+    return { success: false, error: 'An unexpected error occurred. Please try again.' };
   }
-
-  const supabase = await createClient();
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
-
-  // Temporary diagnostic logging for CI/debugging (no secrets logged)
-  const redirectTarget = `${siteUrl}/auth/callback?next=/reset-password`;
-  console.log(`[Auth Reset Request] URL base: ${siteUrl}; redirect target: ${redirectTarget}`);
-
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
-  });
-
-  if (error) {
-    console.error('[Auth Reset Request] Supabase error:', error.message);
-    // Return generic message to avoid email enumeration
-    throw new AppError('If the email exists, a reset link has been sent.', 'NOT_FOUND');
-  }
-
-  console.log(`[Auth Reset Request] Success for email: ${parsed.email}`);
 }
 
 const updatePasswordSchema = z.object({
@@ -197,32 +208,16 @@ export async function updatePassword(formData: z.infer<typeof updatePasswordSche
 
   const supabase = await createClient();
 
-  // Check recovery session status for diagnostics
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData?.session?.user?.id) {
-    console.warn('[Auth Update Password] Recovery session missing');
-    throw new AppError('A valid recovery session is required to update your password.', 'UNAUTHORIZED');
-  }
-
-  const rateKey = `password-update:${sessionData.session.user.id}`;
-  const isAllowed = checkRateLimit(rateKey, 10, 60 * 60000); // 10 attempts per hour
-  if (!isAllowed) {
-    console.warn(`[Auth Update Password] Rate limited for user: ${sessionData.session.user.id}`);
-    throw new AppError('Too many password update attempts. Please try again later.', 'RATE_LIMITED');
-  }
-
-  console.log(`[Auth Update Password] Session exists: ${!!sessionData?.session}; recovery context: ${sessionData?.session?.access_token ? 'present' : 'missing'}`);
-
   const { error } = await supabase.auth.updateUser({
     password: parsed.password,
   });
 
   if (error) {
     console.error('[Auth Update Password] Supabase error:', error.message);
-    throw new AppError('Unable to update password. Please try again.', 'UNAUTHORIZED');
+    return { success: false, error: 'Unable to update password. Please try again.' };
   }
 
-  console.log(`[Auth Update Password] Password updated successfully for user.`);
+  console.log('[Auth Update Password] Password updated successfully.');
 
   redirect('/login');
 }

@@ -19,18 +19,12 @@ export default function LoginPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    try {
-      await login({ email, password });
-    } catch (err: unknown) {
-      if (
-        err instanceof Error &&
-        (err.message?.includes('NEXT_REDIRECT') ||
-          (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))
-      ) {
-        throw err;
-      }
-      setError(err instanceof Error ? err.message : 'Authentication failed. Please check your credentials.');
+    const result = await login({ email, password });
+
+    if (!result.success) {
+      setError(result.error || 'An unexpected error occurred. Please try again.');
       setLoading(false);
+      return;
     }
   };
 

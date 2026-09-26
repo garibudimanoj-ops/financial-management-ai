@@ -1,0 +1,2954 @@
+[
+  {
+    "route": "/pos",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/payments",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/purchases",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/purchases/test123",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/purchases/test123/pay",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/employees",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/expenses",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/expenses/new",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/expenses/test123",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/suppliers",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/suppliers/test123",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/suppliers/test123/edit",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/invoices",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/invoices/test123",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/audit-logs",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "/settings",
+    "httpStatus": 200,
+    "title": "TaskTally — AI CA Financial Management",
+    "consoleErrors": [],
+    "networkFailures": [],
+    "forms": [
+      {
+        "action": "http://localhost:3000/login",
+        "method": "get",
+        "inputs": [
+          {
+            "name": "email",
+            "type": "email",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "password",
+            "required": true
+          }
+        ]
+      },
+      {
+        "action": "empty-submit",
+        "result": "TaskTally — AI CA Financial Management"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Sign In",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": true
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "Show 24 ignore-listed frame(s)",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      },
+      {
+        "text": "01 Issue",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "disabled": false
+      }
+    ],
+    "links": [
+      {
+        "href": "/forgot-password",
+        "text": "Forgot password?"
+      },
+      {
+        "href": "/signup",
+        "text": "Create an account"
+      },
+      {
+        "href": "https://nextjs.org/telemetry#error-feedback",
+        "text": "Was this helpful?"
+      }
+    ],
+    "interactiveElements": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "name": "email"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "name": "password"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      },
+      {
+        "tag": "BUTTON",
+        "type": "",
+        "name": ""
+      }
+    ],
+    "dataLeaks": [
+      "Found sensitive pattern: /password/i",
+      "Found sensitive pattern: /ssn/i"
+    ]
+  },
+  {
+    "route": "API_ENDPOINTS",
+    "apiResults": [
+      {
+        "method": "GET",
+        "url": "http://localhost:3000/api/accounts",
+        "httpStatus": 401,
+        "headers": {
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://wnjbvmftgmneiccknoqt.supabase.co https://api.resend.com/emails https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "content-type": "application/json",
+          "date": "Fri, 18 Sep 2026 09:51:28 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5",
+          "transfer-encoding": "chunked"
+        },
+        "body": "{\"error\":\"Unauthorized: No active session\",\"code\":\"UNAUTHORIZED\"}"
+      },
+      {
+        "method": "GET",
+        "url": "http://localhost:3000/api/transactions",
+        "httpStatus": 401,
+        "headers": {
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://wnjbvmftgmneiccknoqt.supabase.co https://api.resend.com/emails https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "content-type": "application/json",
+          "date": "Fri, 18 Sep 2026 09:51:28 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5",
+          "transfer-encoding": "chunked"
+        },
+        "body": "{\"error\":\"Unauthorized: No active session\",\"code\":\"UNAUTHORIZED\"}"
+      },
+      {
+        "method": "GET",
+        "url": "http://localhost:3000/api/ca-assistant/chat",
+        "httpStatus": 405,
+        "headers": {
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://wnjbvmftgmneiccknoqt.supabase.co https://api.resend.com/emails https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "date": "Fri, 18 Sep 2026 09:51:28 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5",
+          "transfer-encoding": "chunked"
+        },
+        "body": null
+      },
+      {
+        "method": "POST",
+        "url": "http://localhost:3000/api/ca-assistant/chat",
+        "httpStatus": 401,
+        "headers": {
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://wnjbvmftgmneiccknoqt.supabase.co https://api.resend.com/emails https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "content-type": "application/json",
+          "date": "Fri, 18 Sep 2026 09:51:28 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5",
+          "transfer-encoding": "chunked"
+        },
+        "body": "{\"error\":\"Unauthorized: No active session\"}"
+      },
+      {
+        "method": "POST",
+        "url": "http://localhost:3000/api/ai/ingest",
+        "httpStatus": 500,
+        "headers": {
+          "x-frame-options": "DENY",
+          "x-content-type-options": "nosniff",
+          "referrer-policy": "strict-origin-when-cross-origin",
+          "permissions-policy": "camera=(), microphone=(), geolocation=()",
+          "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+          "content-security-policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://wnjbvmftgmneiccknoqt.supabase.co https://api.resend.com/emails https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;",
+          "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+          "content-type": "application/json",
+          "date": "Fri, 18 Sep 2026 09:51:28 GMT",
+          "connection": "keep-alive",
+          "keep-alive": "timeout=5",
+          "transfer-encoding": "chunked"
+        },
+        "body": "{\"error\":\"Unexpected end of JSON input\",\"code\":\"INTERNAL_SERVER_ERROR\"}"
+      }
+    ]
+  }
+]

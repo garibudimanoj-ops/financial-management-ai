@@ -1,0 +1,264 @@
+{
+  "reportTitle": "TaskTally Application - QA Security & AI Assistant Testing Report",
+  "testDate": "2026-09-18T09:41:23Z",
+  "applicationUrl": "http://localhost:3000",
+  "environment": "development",
+  "findings": {
+    "critical": [
+      {
+        "id": "SEC-001",
+        "severity": "CRITICAL",
+        "category": "Secret Exposure",
+        "title": "Supabase Service Role Key and Database URL Exposed in .env File",
+        "description": "The .env file at the project root contains the SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL, NEXTAUTH_SECRET, and NEXT_PUBLIC_SUPABASE_ANON_KEY in plaintext. These credentials provide full database access and authentication bypass capabilities.",
+        "evidence": {
+          "file": ".env",
+          "exposedKeys": ["SUPABASE_SERVICE_ROLE_KEY", "DATABASE_URL", "NEXTAUTH_SECRET", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+          "serviceRoleKey": "[REDACTED]",
+          "databaseUrl": "[REDACTED]"
+        },
+        "impact": "Anyone with access to the source code or .env file can: (1) Access the entire database, (2) Bypass all authentication, (3) Modify or delete all data, (4) Impersonate any user",
+        "recommendation": "Move secrets to environment variables or a secrets manager. Add .env to .gitignore. Rotate all exposed credentials immediately."
+      }
+    ],
+    "high": [
+      {
+        "id": "SEC-002",
+        "severity": "HIGH",
+        "category": "CSP Configuration",
+        "title": "Content-Security-Policy allows 'unsafe-inline' for scripts",
+        "description": "The CSP header in next.config.ts includes 'unsafe-inline' in script-src directive, which allows inline scripts to execute. This significantly weakens XSS protection.",
+        "evidence": {
+          "header": "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ...",
+          "file": "next.config.ts",
+          "line": 18
+        },
+        "impact": "XSS attacks can execute arbitrary JavaScript in the context of the application, potentially stealing session tokens or performing actions on behalf of the user.",
+        "recommendation": "Remove 'unsafe-inline' from script-src. Use nonces or hashes for inline scripts. Consider using 'strict-dynamic'."
+      },
+      {
+        "id": "SEC-003",
+        "severity": "HIGH",
+        "category": "Information Disclosure",
+        "title": "Health Endpoint Exposes Environment Mode",
+        "description": "GET /api/health returns the environment as 'development' in the response body, confirming the application is running in development mode.",
+        "evidence": {
+          "endpoint": "GET /api/health",
+          "response": "{\"status\":\"ok\",\"version\":\"0.1.0\",\"db\":\"ok\",\"environment\":\"development\",\"timestamp\":\"...\"}"
+        },
+        "impact": "Attackers can confirm the application is in development mode, potentially targeting development-specific vulnerabilities or error messages.",
+        "recommendation": "Do not expose the environment mode in health check responses. Use a generic status response."
+      }
+    ],
+    "medium": [
+      {
+        "id": "SEC-004",
+        "severity": "MEDIUM",
+        "category": "IDOR / Information Disclosure",
+        "title": "IDOR Endpoints Return 404 Instead of 403",
+        "description": "GET /api/accounts/1 and GET /api/transactions/1 return 404 (Not Found) instead of 403 (Forbidden) when accessed without proper authorization. This reveals the existence of resources with ID 1.",
+        "evidence": {
+          "GET /api/accounts/1": {"status": 404, "body": "404: This page could not be found."},
+          "GET /api/transactions/1": {"status": 404, "body": "404: This page could not be found."}
+        },
+        "impact": "Attackers can enumerate resource IDs to discover the existence of data. A 403 response would be more appropriate to avoid confirming resource existence.",
+        "recommendation": "Return 403 Forbidden for unauthorized resource access instead of 404. Implement consistent error handling across all API endpoints."
+      },
+      {
+        "id": "SEC-005",
+        "severity": "MEDIUM",
+        "category": "Console Error",
+        "title": "CSP eval() Error in Console",
+        "description": "The browser console shows: 'eval() is not supported in this environment. If this page was served with a Content-Security-Policy header, make sure that unsafe-eval is included. React requires eval() in development mode for various debugging features like reconstructing callstacks from a different environment.'",
+        "evidence": {
+          "consoleError": "eval() is not supported in this environment... React will never use eval() in production mode",
+          "context": "React development mode requires eval() but CSP blocks it"
+        },
+        "impact": "React development tools may not function properly. In production, this could indicate CSP misconfiguration.",
+        "recommendation": "Add 'unsafe-eval' to the CSP script-src directive for development, or ensure proper CSP configuration for production builds."
+      },
+      {
+        "id": "SEC-006",
+        "severity": "MEDIUM",
+        "category": "API Method Restriction",
+        "title": "CA Assistant and AI Ingest Endpoints Only Accept POST",
+        "description": "GET requests to /api/ca-assistant/chat and /api/ai/ingest return 405 Method Not Allowed. While this is correct behavior, the empty response body provides no information about the API.",
+        "evidence": {
+          "GET /api/ca-assistant/chat": {"status": 405, "body": ""},
+          "GET /api/ai/ingest": {"status": 405, "body": ""}
+        },
+        "impact": "Low impact - proper method restriction is good practice, but empty error bodies make debugging difficult.",
+        "recommendation": "Return a meaningful error message in the 405 response body to aid API consumers."
+      }
+    ],
+    "low": [
+      {
+        "id": "SEC-007",
+        "severity": "LOW",
+        "category": "Authentication",
+        "title": "Login and Signup Endpoints Return 405 for Direct POST",
+        "description": "POST requests to /login and /signup return 405 Method Not Allowed. The application uses Next.js server actions for form submission rather than direct API endpoints.",
+        "evidence": {
+          "POST /login": {"status": 405, "body": "Method Not Allowed"},
+          "POST /signup": {"status": 405, "body": "Method Not Allowed"}
+        },
+        "impact": "This is expected behavior for Next.js server actions, but API consumers may expect REST-style endpoints.",
+        "recommendation": "Document the authentication flow clearly. Consider providing API documentation for the expected form submission format."
+      },
+      {
+        "id": "SEC-008",
+        "severity": "LOW",
+        "category": "File Exposure",
+        "title": "Configuration Files Redirect to Login Instead of Being Blocked",
+        "description": "Requests for .env, .env.local, next.config.js, package.json, and other configuration files return 307 redirects to /login instead of being blocked (403/404). This means unauthenticated users can see the login page when requesting these files.",
+        "evidence": {
+          ".env": {"status": 307, "redirect": "/login"},
+          ".env.local": {"status": 307, "redirect": "/login"},
+          "next.config.js": {"status": 307, "redirect": "/login"},
+          "package.json": {"status": 307, "redirect": "/login"}
+        },
+        "impact": "While the actual file contents are not exposed, the redirect behavior could confuse API consumers and indicates the middleware is catching all requests.",
+        "recommendation": "Ensure static configuration files are properly blocked at the server level (403 or 404) rather than redirected to login."
+      }
+    ],
+    "informational": [
+      {
+        "id": "INFO-001",
+        "category": "CA Assistant Security",
+        "title": "CA Assistant Properly Requires Authentication",
+        "description": "All CA Assistant API requests without authentication return 401 Unauthorized. The /ca-assistant page redirects unauthenticated users to /login.",
+        "evidence": {
+          "POST /api/ca-assistant/chat (no auth)": {"status": 401, "body": "{\"error\":\"Unauthorized: No active session\"}"},
+          "GET /api/ca-assistant/chat (no auth)": {"status": 405},
+          "Page access": "Redirects to /login"
+        },
+        "assessment": "PASS - CA Assistant properly enforces authentication"
+      },
+      {
+        "id": "INFO-002",
+        "category": "CA Assistant Security",
+        "title": "CA Assistant Properly Scopes Data to Business Context",
+        "description": "The CA Assistant code validates that businessId from the request matches the authenticated user's business context. It also checks CA_ASSISTANT permission.",
+        "evidence": {
+          "code": "if (businessId !== context.businessId) { return NextResponse.json({ error: 'Invalid business scope.' }, { status: 403 }); }",
+          "permissionCheck": "hasPermission(context.role, 'CA_ASSISTANT')"
+        },
+        "assessment": "PASS - Business scoping and permission checks are implemented"
+      },
+      {
+        "id": "INFO-003",
+        "category": "CA Assistant Security",
+        "title": "CA Assistant Implements Read-Only Queries and Audit Logging",
+        "description": "The CA Assistant only performs read-only database queries. Action suggestions require user confirmation. All interactions are logged via audit events.",
+        "evidence": {
+          "readOnly": "All queries use prisma.findMany, prisma.aggregate, prisma.count",
+          "suggestions": "isSuggestion flag requires user confirmation",
+          "audit": "logAuditEvent called for every interaction"
+        },
+        "assessment": "PASS - Read-only design and audit logging implemented"
+      },
+      {
+        "id": "INFO-004",
+        "category": "XSS Protection",
+        "title": "XSS Attempts Blocked by Authentication Layer",
+        "description": "XSS payloads sent to /api/ca-assistant/chat are blocked by the authentication layer (401 Unauthorized). The application does not process malicious payloads without authentication.",
+        "evidence": {
+          "POST with <script> tag": {"status": 401, "body": "{\"error\":\"Unauthorized: No active session\"}"},
+          "POST with document.cookie": {"status": 401}
+        },
+        "assessment": "PASS - XSS attempts blocked by auth layer (but CSP 'unsafe-inline' still a concern)"
+      },
+      {
+        "id": "INFO-005",
+        "category": "API Security",
+        "title": "All Protected APIs Return Consistent 401 Without Auth",
+        "description": "GET /api/accounts, GET /api/transactions, POST /api/ca-assistant/chat all return 401 with structured error response {error: 'Unauthorized: No active session', code: 'UNAUTHORIZED'} without authentication.",
+        "evidence": {
+          "GET /api/accounts": {"status": 401, "body": "{\"error\":\"Unauthorized: No active session\",\"code\":\"UNAUTHORIZED\"}"},
+          "GET /api/transactions": {"status": 401, "body": "{\"error\":\"Unauthorized: No active session\",\"code\":\"UNAUTHORIZED\"}"},
+          "POST /api/ca-assistant/chat": {"status": 401, "body": "{\"error\":\"Unauthorized: No active session\"}"}
+        },
+        "assessment": "PASS - Consistent authentication enforcement"
+      },
+      {
+        "id": "INFO-006",
+        "category": "Open Redirect",
+        "title": "No Open Redirect Vulnerability Found",
+        "description": "The /api/auth/redirect endpoint does not exist (404). The auth callback route properly validates the next parameter to prevent open redirects.",
+        "evidence": {
+          "GET /api/auth/redirect?url=http://evil.com": {"status": 404},
+          "auth/callback code": "safeNext validation: startsWith('/') && !startsWith('//')"
+        },
+        "assessment": "PASS - Open redirect protection implemented"
+      },
+      {
+        "id": "INFO-007",
+        "category": "Rate Limiting",
+        "title": "Rate Limiting Implemented for AI Ingest",
+        "description": "The /api/ai/ingest endpoint implements rate limiting (30 requests per minute per IP). The auth callback also has rate limiting.",
+        "evidence": {
+          "ai/ingest": "checkRateLimit(`ai-ingest:${ip}`, 30, 60000)",
+          "auth/callback": "checkRateLimit(`auth-callback:${clientIp}`, 30, 60000)"
+        },
+        "assessment": "PASS - Rate limiting implemented for sensitive endpoints"
+      },
+      {
+        "id": "INFO-008",
+        "category": "Error Handling",
+        "title": "Error Message Leakage Prevention",
+        "description": "The withErrorHandling wrapper prevents database error messages from leaking to clients in production. Prisma errors are sanitized.",
+        "evidence": {
+          "code": "isProd ? 'Internal Server Error' : err instanceof Error ? err.message : 'Internal Server Error'",
+          "testFile": "error-leakage.test.ts confirms error message prevention"
+        },
+        "assessment": "PASS - Error message leakage prevention implemented"
+      }
+    ]
+  },
+  "apiTestResults": [
+    {"method": "GET", "endpoint": "/api/health", "status": 200, "summary": "Returns ok status with environment=development"},
+    {"method": "GET", "endpoint": "/api/accounts", "status": 401, "summary": "Unauthorized - no active session"},
+    {"method": "GET", "endpoint": "/api/transactions", "status": 401, "summary": "Unauthorized - no active session"},
+    {"method": "GET", "endpoint": "/api/ca-assistant/chat", "status": 405, "summary": "Method Not Allowed"},
+    {"method": "POST", "endpoint": "/api/ca-assistant/chat", "status": 401, "summary": "Unauthorized - no active session"},
+    {"method": "GET", "endpoint": "/api/ai/ingest", "status": 405, "summary": "Method Not Allowed"},
+    {"method": "POST", "endpoint": "/api/ca-assistant/chat", "status": 401, "summary": "Prompt injection blocked by auth"},
+    {"method": "POST", "endpoint": "/api/ca-assistant/chat", "status": 401, "summary": "Empty message blocked by auth"},
+    {"method": "POST", "endpoint": "/api/ca-assistant/chat", "status": 401, "summary": "XSS payload blocked by auth"},
+    {"method": "GET", "endpoint": "/api/accounts/1", "status": 404, "summary": "IDOR - returns 404 instead of 403"},
+    {"method": "GET", "endpoint": "/api/transactions/1", "status": 404, "summary": "IDOR - returns 404 instead of 403"},
+    {"method": "GET", "endpoint": "/api/auth/redirect?url=http://evil.com", "status": 404, "summary": "No open redirect vulnerability"},
+    {"method": "POST", "endpoint": "/login", "status": 405, "summary": "Method Not Allowed (uses server actions)"},
+    {"method": "POST", "endpoint": "/signup", "status": 405, "summary": "Method Not Allowed (uses server actions)"},
+    {"method": "POST", "endpoint": "/api/accounts", "status": 401, "summary": "Unauthorized - requires auth"}
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/login",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:3000/api/accounts",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:3000/api/transactions",
+    "Failed to load resource: the server responded with a status of 405 (Method Not Allowed) @ http://localhost:3000/api/ca-assistant/chat",
+    "Failed to load resource: the server responded with a status of 405 (Method Not Allowed) @ http://localhost:3000/api/ai/ingest",
+    "Failed to load resource: the server responded with a status of 405 (Method Not Allowed) @ http://localhost:3000/login",
+    "Failed to load resource: the server responded with a status of 405 (Method Not Allowed) @ http://localhost:3000/signup",
+    "eval() is not supported in this environment... React requires eval() in development mode"
+  ],
+  "securityHeaders": {
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://wnjbvmftgmneiccknoqt.supabase.co https://api.resend.com/emails https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content;"
+  },
+  "overallAssessment": {
+    "authentication": "PASS - All protected endpoints properly enforce authentication",
+    "authorization": "PASS - Business scoping and role-based permissions implemented",
+    "inputValidation": "PASS - Message validation and business scope checks in CA Assistant",
+    "errorHandling": "PASS - Error messages are sanitized in production",
+    "rateLimiting": "PASS - Rate limiting on sensitive endpoints",
+    "csp": "FAIL - 'unsafe-inline' in script-src weakens XSS protection",
+    "secretManagement": "CRITICAL FAILURE - Secrets exposed in .env file",
+    "idor": "FAIL - IDOR endpoints return 404 instead of 403",
+    "informationDisclosure": "FAIL - Health endpoint exposes environment mode"
+  }
+}

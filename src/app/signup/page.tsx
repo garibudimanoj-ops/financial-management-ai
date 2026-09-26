@@ -32,19 +32,12 @@ export default function SignupPage() {
       return;
     }
 
-    try {
-      await signup({ email: parsed.data.email, password: parsed.data.password });
-    } catch (err: unknown) {
-      // Preserve Next.js redirect exceptions; don't swallow NEXT_REDIRECT
-      if (
-        err instanceof Error &&
-        (err.message?.includes('NEXT_REDIRECT') ||
-          (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT'))
-      ) {
-        throw err;
-      }
-      setError(err instanceof Error ? err.message : 'Account creation failed. Please try again.');
+    const signupResult = await signup({ email: parsed.data.email, password: parsed.data.password });
+
+    if (!signupResult.success) {
+      setError(signupResult.error || 'An unexpected error occurred. Please try again.');
       setLoading(false);
+      return;
     }
   };
 
