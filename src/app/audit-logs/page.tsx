@@ -11,6 +11,8 @@ import DataTable, {
 } from '@/components/ui/DataTable';
 import Badge from '@/components/ui/Badge';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AuditLogsPage({
   searchParams,
 }: {

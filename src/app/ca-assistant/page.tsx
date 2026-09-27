@@ -4,6 +4,8 @@ import CAAssistantClient from '@/components/ca-assistant/CAAssistantClient';
 import PageHeader from '@/components/ui/PageHeader';
 import { BotMessageSquare, AlertCircle } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CAAssistantPage() {
   try {
     const context = await requireBusinessContext();

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, Users } from 'lucide-react';
 import type { BusinessContext } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 interface Member {
   id: string;
   userId: string;

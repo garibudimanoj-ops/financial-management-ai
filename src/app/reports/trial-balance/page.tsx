@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { ArrowLeft, Scale, CheckCircle2, AlertTriangle } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function TrialBalancePage() {
   try {
   const context = await requireBusinessContext();
