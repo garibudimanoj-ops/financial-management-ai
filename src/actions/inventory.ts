@@ -22,7 +22,7 @@ export type AddStockFormData = z.input<typeof addStockSchema>;
  * Server action to receive and record new stock batches.
  */
 export async function addStockAction(businessId: string, formData: AddStockFormData) {
-  const context = await requirePermission(businessId, 'INVENTORY_READ');
+  const context = await requirePermission(businessId, 'INVENTORY_ADJUST');
   const parsed = addStockSchema.parse(formData);
 
   const result = await addStock({

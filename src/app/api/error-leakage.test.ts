@@ -5,7 +5,7 @@ import { POST as postAiIngest } from './ai/ingest/route';
 
 const mocks = vi.hoisted(() => ({
   requirePermission: vi.fn(),
-  checkRateLimit: vi.fn(),
+  checkRateLimitShared: vi.fn(),
   parseFinancialDocument: vi.fn(),
   prisma: {
     invoice: { findMany: vi.fn() },
@@ -34,7 +34,7 @@ vi.mock('@/services/ai/llmOrchestrator', () => ({
 
 vi.mock('@/lib/prisma', () => ({ prisma: mocks.prisma }));
 vi.mock('@/lib/rateLimit', () => ({
-  checkRateLimit: (...args: unknown[]) => mocks.checkRateLimit(...args),
+  checkRateLimitShared: (...args: unknown[]) => mocks.checkRateLimitShared(...args),
 }));
 
 function request(url: string, body: Record<string, unknown>) {
@@ -56,7 +56,7 @@ describe('API error message leakage prevention', () => {
       role: 'OWNER' as const,
       membershipStatus: 'ACTIVE',
     });
-    mocks.checkRateLimit.mockReturnValue(true);
+    mocks.checkRateLimitShared.mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -137,5 +137,18 @@ describe('API error message leakage prevention', () => {
 
     expect(body.error).toContain('connection refused');
     expect(body.error).toContain('secret-db');
+  });
+
+  it('rejects oversized AI documents before parsing or rate-limit work', async () => {
+    const response = await postAiIngest(
+      request('http://localhost/api/ai/ingest', {
+        businessId: 'business-own',
+        fileContent: 'x'.repeat(5 * 1024 * 1024 + 1),
+      })
+    );
+
+    expect(response.status).toBe(413);
+    expect(mocks.requirePermission).not.toHaveBeenCalled();
+    expect(mocks.parseFinancialDocument).not.toHaveBeenCalled();
   });
 });

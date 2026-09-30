@@ -26,8 +26,9 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
-      update: vi.fn(),
+      updateMany: vi.fn(),
     },
     business: {
       findUnique: vi.fn(),
@@ -129,36 +130,81 @@ describe('Auth & Multi-Tenant Helpers', () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         id: 'existing-admin-id',
-        supabaseUserId: 'sub-admin-demo-uuid',
+        supabaseUserId: 'real-supabase-uuid-123',
         email: 'admin@apexglobal.demo',
         name: 'Priya Sharma (Principal CA)',
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-
-    vi.mocked(prisma.user.update).mockResolvedValueOnce({
+    vi.mocked(prisma.user.findFirst).mockResolvedValueOnce({
       id: 'existing-admin-id',
-      supabaseUserId: 'real-supabase-uuid-123',
+      supabaseUserId: 'sub-admin-demo-uuid',
       email: 'admin@apexglobal.demo',
       name: 'Priya Sharma (Principal CA)',
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
+    vi.mocked(prisma.user.updateMany).mockResolvedValueOnce({ count: 1 });
+
     const synced = await syncPrismaUser({
       id: 'real-supabase-uuid-123',
       email: 'admin@apexglobal.demo',
+      email_confirmed_at: '2026-01-01T00:00:00.000Z',
       user_metadata: { name: 'Priya Sharma (Principal CA)' },
     });
 
     expect(synced.id).toBe('existing-admin-id');
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'existing-admin-id' },
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'existing-admin-id',
+        supabaseUserId: 'sub-admin-demo-uuid',
+        email: 'admin@apexglobal.demo',
+      },
       data: {
         supabaseUserId: 'real-supabase-uuid-123',
         name: 'Priya Sharma (Principal CA)',
       },
     });
+  });
+
+  it('does not link an existing account until Supabase confirms email ownership', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce(null);
+    vi.mocked(prisma.user.findFirst).mockResolvedValueOnce({
+      id: 'existing-user',
+      supabaseUserId: 'seed-user-id',
+      email: 'test@example.com',
+      name: 'Existing User',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await expect(syncPrismaUser({
+      id: 'real-supabase-uuid-123',
+      email: ' TEST@example.com ',
+    })).rejects.toThrow('Email must be verified before linking this account');
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects a concurrent email-linking race when another Supabase identity claims the record', async () => {
+    vi.mocked(prisma.user.findUnique)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    vi.mocked(prisma.user.findFirst).mockResolvedValueOnce({
+      id: 'existing-user',
+      supabaseUserId: 'seed-user-id',
+      email: 'test@example.com',
+      name: 'Existing User',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    vi.mocked(prisma.user.updateMany).mockResolvedValueOnce({ count: 0 });
+
+    await expect(syncPrismaUser({
+      id: 'real-supabase-uuid-123',
+      email: 'test@example.com',
+      email_confirmed_at: '2026-01-01T00:00:00.000Z',
+    })).rejects.toThrow('This email is already linked to another account');
   });
 
   it('should resolve business context for active member', async () => {

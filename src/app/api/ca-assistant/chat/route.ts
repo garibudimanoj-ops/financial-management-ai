@@ -3,9 +3,28 @@ import { requireBusinessContext, hasPermission } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/errors';
 import { logAuditEvent } from '@/lib/audit';
+import { readJsonBody } from '@/lib/httpBody';
+import { checkRateLimitShared } from '@/lib/rateLimit';
+import { z } from 'zod';
+
+const MAX_CHAT_REQUEST_BYTES = 16 * 1024;
+const chatRequestSchema = z.object({
+  message: z.string().trim().min(1).max(4000),
+  businessId: z.string().trim().min(1),
+});
 
 export async function POST(req: NextRequest) {
   try {
+    if (!/^application\/json(?:\s*;|$)/i.test(req.headers.get('content-type') ?? '')) {
+      throw new AppError('Content-Type must be application/json', 'VALIDATION_ERROR', 415);
+    }
+
+    const parsed = chatRequestSchema.safeParse(await readJsonBody(req, MAX_CHAT_REQUEST_BYTES));
+    if (!parsed.success) {
+      throw new AppError('Invalid chat request', 'VALIDATION_ERROR');
+    }
+    const { message, businessId } = parsed.data;
+
     const context = await requireBusinessContext();
     const canAccess = hasPermission(context.role, 'CA_ASSISTANT');
 
@@ -13,12 +32,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
 
-    const { message, businessId } = await req.json();
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json({ error: 'Message required.' }, { status: 400 });
-    }
     if (businessId !== context.businessId) {
       return NextResponse.json({ error: 'Invalid business scope.' }, { status: 403 });
+    }
+
+    const isAllowed = await checkRateLimitShared(`ca-assistant:user:${context.userId}`, 30, 60000);
+    if (!isAllowed) {
+      throw new AppError('Too many assistant requests. Please try again later.', 'RATE_LIMITED');
     }
 
     // Action suggestions require user confirmation; drafts only, no posting
@@ -27,7 +47,7 @@ export async function POST(req: NextRequest) {
     const auditDetails = {
       suggested_by: 'ca_assistant',
       action_type: isSuggestion ? 'action_suggestion' : 'read_query',
-      message_preview: message.slice(0, 200),
+      message_length: message.length,
       businessId: context.businessId,
     };
 
@@ -94,6 +114,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof AppError) {
       return NextResponse.json({ error: error.message }, { status: error.statusCode || 400 });
     }
+    console.error('[CA Assistant] Request failed', error instanceof Error ? error.name : 'unknown error');
     return NextResponse.json({ error: 'Internal error.' }, { status: 500 });
   }
 }

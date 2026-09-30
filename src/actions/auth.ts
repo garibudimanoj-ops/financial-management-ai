@@ -6,7 +6,7 @@ import { logAuditEvent } from '@/lib/audit';
 import { syncPrismaUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { checkRateLimit } from '@/lib/rateLimit';
+import { checkRateLimitShared } from '@/lib/rateLimit';
 
 const authSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -20,8 +20,8 @@ export async function login(formData: z.infer<typeof authSchema>) {
   try {
     const parsed = authSchema.parse(formData);
 
-    const rateKey = `login:${parsed.email}`;
-    const isAllowed = checkRateLimit(rateKey, 5, 15 * 60000);
+    const rateKey = `login:${parsed.email.trim().toLowerCase()}`;
+    const isAllowed = await checkRateLimitShared(rateKey, 5, 15 * 60000);
     if (!isAllowed) {
       console.warn('[Auth Login] Rate limited');
       return { success: false, error: 'Too many login attempts. Please try again later.' };
@@ -74,8 +74,8 @@ export async function signup(formData: z.infer<typeof authSchema>) {
   try {
     const parsed = authSchema.parse(formData);
 
-    const rateKey = `signup:${parsed.email}`;
-    const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000);
+    const rateKey = `signup:${parsed.email.trim().toLowerCase()}`;
+    const isAllowed = await checkRateLimitShared(rateKey, 3, 60 * 60000);
     if (!isAllowed) {
       console.warn('[Auth Signup] Rate limited');
       return { success: false, error: 'Too many sign-up attempts. Please try again later.' };
@@ -98,7 +98,7 @@ export async function signup(formData: z.infer<typeof authSchema>) {
       return { success: false, error: 'Unable to create account. Please try again later.' };
     }
 
-    if (data.user) {
+    if (data.user && data.session) {
       const user = await syncPrismaUser(data.user);
 
       console.log(`[Auth Signup] Supabase User ID: ${data.user.id} | Prisma User ID: ${user.id}`);
@@ -163,8 +163,8 @@ export async function requestPasswordReset(formData: z.infer<typeof resetRequest
   try {
     const parsed = resetRequestSchema.parse(formData);
 
-    const rateKey = `password-reset:${parsed.email}`;
-    const isAllowed = checkRateLimit(rateKey, 3, 60 * 60000); // 3 reset requests per hour
+    const rateKey = `password-reset:${parsed.email.trim().toLowerCase()}`;
+    const isAllowed = await checkRateLimitShared(rateKey, 3, 60 * 60000); // 3 reset requests per hour
     if (!isAllowed) {
       console.warn('[Auth Reset Request] Rate limited');
       return { success: false, error: 'Too many password reset requests. Please try again later.' };

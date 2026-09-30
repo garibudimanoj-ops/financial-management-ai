@@ -135,6 +135,31 @@ describe('Product Actions & RBAC CRUD', () => {
         })
       ).rejects.toThrow("A product with barcode '8901234567890' already exists in this business");
     });
+
+    it('requires inventory-adjust permission before creating a product with initial stock', async () => {
+      vi.mocked(requirePermission)
+        .mockResolvedValueOnce({
+          userId: 'user-staff',
+          userEmail: 'staff@example.com',
+          businessId: 'biz-1',
+          role: 'STAFF',
+          membershipStatus: 'ACTIVE',
+          supabaseUserId: 'supa-staff',
+        })
+        .mockRejectedValueOnce(new AppError('Forbidden: Insufficient permissions (INVENTORY_ADJUST)', 'FORBIDDEN'));
+
+      await expect(createProduct('biz-1', {
+        name: 'Stocked product',
+        SKU: 'STOCKED-001',
+        costPrice: 10,
+        sellingPrice: 20,
+        initialStock: 5,
+      })).rejects.toThrow('INVENTORY_ADJUST');
+
+      expect(requirePermission).toHaveBeenNthCalledWith(1, 'biz-1', 'PRODUCT_CREATE');
+      expect(requirePermission).toHaveBeenNthCalledWith(2, 'biz-1', 'INVENTORY_ADJUST');
+      expect(prisma.product.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateProduct', () => {

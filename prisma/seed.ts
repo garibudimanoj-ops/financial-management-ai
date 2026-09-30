@@ -11,11 +11,13 @@ if (!rawConnectionString) {
 
 const connectionUrl = new URL(rawConnectionString);
 connectionUrl.searchParams.delete('sslmode');
+const ca = process.env.SUPABASE_CA_CERT?.replace(/\\n/g, '\n');
 
 const pool = new Pool({
   connectionString: connectionUrl.toString(),
   ssl: {
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
+    ...(ca ? { ca } : {}),
   },
 });
 

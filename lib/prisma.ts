@@ -13,16 +13,15 @@ if (!rawConnectionString) {
     throw new Error('DATABASE_URL is not set. Check your .env file.');
 }
 
-// Supabase connection currently presents a certificate chain that
-// Node/pg may reject locally. Remove sslmode from the URL and
-// explicitly configure the pg SSL behavior.
 const connectionUrl = new URL(rawConnectionString);
 connectionUrl.searchParams.delete('sslmode');
+const ca = process.env.SUPABASE_CA_CERT?.replace(/\\n/g, '\n');
 
 const pool = new Pool({
     connectionString: connectionUrl.toString(),
     ssl: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: true,
+        ...(ca ? { ca } : {}),
     },
 });
 

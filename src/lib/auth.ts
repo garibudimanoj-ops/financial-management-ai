@@ -19,16 +19,17 @@ export interface BusinessContext {
 /**
  * Synchronizes an authenticated Supabase user with the local Prisma User record.
  * 1. Checks by supabaseUserId.
- * 2. If not found, safely checks by email and links the real supabaseUserId.
+ * 2. If not found, links a case-insensitive email match only after verification and a compare-and-set update.
  * 3. If neither exists, creates a new local Prisma User.
  * 4. Ensures allowed development/demo accounts receive active demo business memberships.
  */
 export async function syncPrismaUser(supabaseUser: {
   id: string;
   email?: string | null;
+  email_confirmed_at?: string | null;
   user_metadata?: Record<string, unknown> | null;
 }): Promise<User> {
-  const email = supabaseUser.email;
+  const email = supabaseUser.email?.trim().toLowerCase();
   if (!email) {
     throw new AppError('Unauthorized: Supabase user has no email', 'UNAUTHORIZED');
   }
@@ -38,21 +39,49 @@ export async function syncPrismaUser(supabaseUser: {
     where: { supabaseUserId: supabaseUser.id },
   });
 
-  // 2. If not found by Supabase UUID, lookup by email to link existing local records
+  // Linking a pre-existing local record by email requires proof of ownership.
   if (!user) {
-    user = await prisma.user.findUnique({
-      where: { email },
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
     });
 
-    if (user) {
-      // 3. Update existing user's supabaseUserId to match the real Supabase UUID
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          supabaseUserId: supabaseUser.id,
-          name: typeof supabaseUser.user_metadata?.name === 'string' ? supabaseUser.user_metadata.name : user.name,
-        },
-      });
+    if (existingUser) {
+      if (!supabaseUser.email_confirmed_at) {
+        throw new AppError('Email must be verified before linking this account', 'FORBIDDEN');
+      }
+
+      const data = {
+        supabaseUserId: supabaseUser.id,
+        name: typeof supabaseUser.user_metadata?.name === 'string'
+          ? supabaseUser.user_metadata.name
+          : existingUser.name,
+      };
+
+      try {
+        await prisma.user.updateMany({
+          where: {
+            id: existingUser.id,
+            supabaseUserId: existingUser.supabaseUserId,
+            email: existingUser.email,
+          },
+          data,
+        });
+        user = await prisma.user.findUnique({ where: { supabaseUserId: supabaseUser.id } });
+      } catch (error) {
+        // A concurrent sync may have claimed the email or UUID; only accept its result
+        // if it is the same verified identity.
+        const concurrentUser = await prisma.user.findUnique({
+          where: { supabaseUserId: supabaseUser.id },
+        });
+        if (!concurrentUser || concurrentUser.email.trim().toLowerCase() !== email) {
+          throw error;
+        }
+        user = concurrentUser;
+      }
+
+      if (!user || user.email.trim().toLowerCase() !== email) {
+        throw new AppError('This email is already linked to another account', 'CONFLICT');
+      }
       console.log(`[Auth Sync] Linked existing Prisma User ID: ${user.id} to Supabase User ID: ${supabaseUser.id}`);
     }
   }

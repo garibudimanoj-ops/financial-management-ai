@@ -5,9 +5,22 @@ import { orchestrateDocumentToDraftTransaction } from '@/services/ai/llmOrchestr
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
-import { checkRateLimit } from '@/lib/rateLimit';
+import { checkRateLimitShared } from '@/lib/rateLimit';
 import { extractBusinessId } from '@/lib/utils';
+import { readJsonBody } from '@/lib/httpBody';
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
+
+const MAX_REQUEST_BYTES = 5 * 1024 * 1024;
+
+const ingestRequestSchema = z.object({
+  businessId: z.string().trim().min(1).optional(),
+  companyId: z.string().trim().min(1).optional(),
+  fileName: z.string().trim().min(1).max(255).default('uploaded-invoice.pdf'),
+  fileContent: z.string().max(MAX_REQUEST_BYTES).default(''),
+  isInterState: z.boolean().default(false),
+  saveDraft: z.boolean().default(true),
+});
 
 type DraftTransactionResponse = Prisma.TransactionGetPayload<{
   include: {
@@ -23,21 +36,27 @@ type DraftTransactionResponse = Prisma.TransactionGetPayload<{
  * Sets status: "DRAFT" and requires_human_review: true.
  */
 export const POST = withErrorHandling(async (req: NextRequest) => {
-  // 1. Rate limiting check
-  const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-  const isAllowed = checkRateLimit(`ai-ingest:${ip}`, 30, 60000); // 30 requests per minute
-  if (!isAllowed) {
-    throw new AppError('Too many AI ingest requests. Please try again later.', 'RATE_LIMITED', 429);
+  if (!/^application\/json(?:\s*;|$)/i.test(req.headers.get('content-type') ?? '')) {
+    throw new AppError('Content-Type must be application/json', 'VALIDATION_ERROR', 415);
   }
 
-  const body = await req.json();
+  const bodyResult = ingestRequestSchema.safeParse(await readJsonBody(req, MAX_REQUEST_BYTES));
+  if (!bodyResult.success) {
+    throw new AppError('Invalid AI ingestion request', 'VALIDATION_ERROR', {
+      issues: bodyResult.error.issues,
+    });
+  }
+  const body = bodyResult.data;
   const { businessId: requestedBusinessId } = extractBusinessId(req, body);
   const context = await requirePermission(requestedBusinessId, 'AI_FINANCIAL_READ');
   const { businessId, userId } = context;
 
-  const fileName = body.fileName || 'uploaded-invoice.pdf';
-  const fileContent = body.fileContent || '';
-  const isInterState = Boolean(body.isInterState);
+  const isAllowed = await checkRateLimitShared(`ai-ingest:user:${userId}`, 30, 60000);
+  if (!isAllowed) {
+    throw new AppError('Too many AI ingest requests. Please try again later.', 'RATE_LIMITED', 429);
+  }
+
+  const { fileName, fileContent, isInterState } = body;
 
   // 2. Parse Document
   const parsedDoc = await parseFinancialDocument(fileContent, fileName);
@@ -47,7 +66,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
   // 4. Save as Draft Transaction in General Ledger if saveDraft is requested (default true)
   let savedDraft: DraftTransactionResponse | null = null;
-  if (body.saveDraft !== false) {
+  if (body.saveDraft) {
     // Map account codes to actual accounts for this business
     const accounts = await prisma.account.findMany({
       where: { businessId },

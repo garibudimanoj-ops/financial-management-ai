@@ -7,18 +7,13 @@ export async function GET() {
 
     return NextResponse.json({
       status: 'ok',
-      version: process.env.npm_package_version || 'unknown',
-      db: 'ok',
-      timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('[Health Check] Database check failed:', error);
+    console.error('[Health Check] Database check failed', error instanceof Error ? error.name : 'unknown error');
 
     return NextResponse.json(
       {
-        status: 'degraded',
-        db: 'blocked',
-        timestamp: new Date().toISOString(),
+        status: 'unavailable',
       },
       { status: 503 }
     );

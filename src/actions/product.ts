@@ -32,6 +32,9 @@ export type CreateProductFormData = z.input<typeof productSchema>;
 export async function createProduct(businessId: string, formData: CreateProductFormData) {
   const context = await requirePermission(businessId, 'PRODUCT_CREATE');
   const parsed = productSchema.parse(formData);
+  if (parsed.initialStock > 0) {
+    await requirePermission(businessId, 'INVENTORY_ADJUST');
+  }
 
   // Check SKU uniqueness within tenant
   const existingSKU = await prisma.product.findUnique({

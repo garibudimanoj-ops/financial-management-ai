@@ -22,7 +22,17 @@ export function withErrorHandling<T extends RouteHandler>(handler: T): T {
     try {
       return await handler(req, ctx);
     } catch (err: unknown) {
-      console.error('API Error:', err);
+      if (process.env.NODE_ENV === 'production') {
+        if (err instanceof AppError) {
+          console.error('API Error:', { code: err.code, statusCode: err.statusCode });
+        } else if (err && typeof err === 'object' && 'code' in err) {
+          console.error('API Error:', { code: String((err as { code: unknown }).code) });
+        } else {
+          console.error('API Error:', err instanceof Error ? err.name : 'unknown error');
+        }
+      } else {
+        console.error('API Error:', err);
+      }
 
       if (err instanceof AppError) {
         return NextResponse.json(

@@ -1,5 +1,7 @@
 # Security Audit Report
 
+> Historical report. Its assertions are superseded by the current findings and verification in [SECURITY-AUDIT-2026-10.md](./SECURITY-AUDIT-2026-10.md).
+
 **Repository**: financial-management-ai
 **Audit ID**: security-audit-2026-09-18
 **Profile**: standard

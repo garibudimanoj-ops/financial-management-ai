@@ -1,9 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest, requestHeaders: Headers) {
   let supabaseResponse = NextResponse.next({
-    request,
+    request: { headers: requestHeaders },
   });
 
   const supabase = createServerClient(
@@ -16,8 +16,9 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          requestHeaders.set('cookie', request.cookies.toString());
           supabaseResponse = NextResponse.next({
-            request,
+            request: { headers: requestHeaders },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -74,18 +75,28 @@ export async function updateSession(request: NextRequest) {
   if (isPublicPath || isAuthPage) {
     if (user && shouldRedirectAuthenticatedUser) {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
-      return NextResponse.redirect(url);
+      url.pathname = '/onboarding';
+      return secureResponse(NextResponse.redirect(url));
     }
 
-    return supabaseResponse;
+    return secureResponse(supabaseResponse);
   }
 
   if (!user && isProtectedPath) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    return NextResponse.redirect(url);
+    return secureResponse(NextResponse.redirect(url));
   }
 
-  return supabaseResponse;
+  return secureResponse(supabaseResponse);
+
+  function secureResponse(response: NextResponse) {
+    if (response !== supabaseResponse) {
+      for (const cookie of supabaseResponse.cookies.getAll()) {
+        response.cookies.set(cookie);
+      }
+    }
+    response.headers.set('Content-Security-Policy', requestHeaders.get('Content-Security-Policy') ?? '');
+    return response;
+  }
 }
