@@ -7,14 +7,10 @@ import { extractBusinessId, decimalToString } from '@/lib/utils';
 function escapeCSV(value: unknown): string {
   if (value === null || value === undefined) return '';
   let str = String(value);
-  // Prevent formula injection: prepend tab if value starts with =, +, -, @
-  if (/^[=+\-@]/.test(str)) {
-    str = '\t' + str;
+  if (/^[\s\u0000-\u001f]*[=+\-@]/.test(str)) {
+    str = "'" + str;
   }
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
+  return `"${str.replace(/"/g, '""')}"`;
 }
 
 export async function GET(request: NextRequest) {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { requireAuth, requireBusinessContext, requireRole, requirePermission, getUserBusinesses, syncPrismaUser } from './auth';
+import { requireAuth, requireInvitationRecipient, requireBusinessContext, requireRole, requirePermission, getUserBusinesses, syncPrismaUser } from './auth';
 import { prisma } from '@/lib/prisma';
 import { AppError } from './errors';
 
@@ -46,7 +46,12 @@ describe('Auth & Multi-Tenant Helpers', () => {
     vi.resetAllMocks();
     mockGetUser.mockResolvedValue({
       data: {
-        user: { id: 'real-supabase-uuid-123', email: 'test@example.com', user_metadata: { name: 'Test User' } },
+        user: {
+          id: 'real-supabase-uuid-123',
+          email: 'test@example.com',
+          email_confirmed_at: '2026-01-01T00:00:00.000Z',
+          user_metadata: { name: 'Test User' },
+        },
       },
       error: null,
     });
@@ -60,6 +65,39 @@ describe('Auth & Multi-Tenant Helpers', () => {
 
     await expect(requireAuth()).rejects.toThrow(AppError);
     await expect(requireAuth()).rejects.toThrow('Unauthorized: No active session');
+  });
+
+  it('requires the verified email to match an invitation before syncing the user', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.user.create).mockResolvedValue({
+      id: 'new-user-id',
+      supabaseUserId: 'real-supabase-uuid-123',
+      email: 'test@example.com',
+      name: 'Test User',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await expect(requireInvitationRecipient(' TEST@example.com ')).resolves.toMatchObject({
+      id: 'new-user-id',
+    });
+  });
+
+  it('rejects unverified or mismatched invitation email addresses', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: { id: 'real-supabase-uuid-123', email: 'test@example.com', user_metadata: {} } },
+      error: null,
+    });
+
+    await expect(requireInvitationRecipient('test@example.com')).rejects.toThrow(
+      'Invitation is not for this account'
+    );
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+
+    await expect(requireInvitationRecipient('other@example.com')).rejects.toThrow(
+      'Invitation is not for this account'
+    );
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   it('should auto-create application user if user exists in Supabase but not in Prisma', async () => {

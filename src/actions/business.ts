@@ -1,6 +1,6 @@
 'use server';
 
-import { requireAuth, requirePermission, requireBusinessContext } from '@/lib/auth';
+import { requireAuth, requireInvitationRecipient, requirePermission, requireBusinessContext } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logAuditEvent } from '@/lib/audit';
 import { AppError } from '@/lib/errors';
@@ -179,8 +179,6 @@ export async function inviteMember(businessId: string, formData: z.infer<typeof 
  * Accept an invitation to join a business.
  */
 export async function acceptInvitation(invitationId: string) {
-  const user = await requireAuth();
-
   const invitation = await prisma.businessInvitation.findUnique({
     where: { id: invitationId },
   });
@@ -188,6 +186,8 @@ export async function acceptInvitation(invitationId: string) {
   if (!invitation || invitation.status !== 'PENDING') {
     throw new AppError('Invitation not found or no longer pending', 'NOT_FOUND');
   }
+
+  const user = await requireInvitationRecipient(invitation.email);
 
   if (invitation.expiresAt < new Date()) {
     await prisma.businessInvitation.update({
@@ -247,8 +247,6 @@ export async function acceptInvitation(invitationId: string) {
  * Decline an invitation.
  */
 export async function declineInvitation(invitationId: string) {
-  const user = await requireAuth();
-
   const invitation = await prisma.businessInvitation.findUnique({
     where: { id: invitationId },
   });
@@ -256,6 +254,8 @@ export async function declineInvitation(invitationId: string) {
   if (!invitation || invitation.status !== 'PENDING') {
     throw new AppError('Invitation not found or no longer pending', 'NOT_FOUND');
   }
+
+  const user = await requireInvitationRecipient(invitation.email);
 
   await prisma.businessInvitation.update({
     where: { id: invitationId },

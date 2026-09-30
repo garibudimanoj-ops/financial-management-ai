@@ -55,10 +55,8 @@ describe('CSV export formula injection protection', () => {
     const response = await GET(request('http://localhost/api/reports/export?type=invoices'));
     const csv = await response.text();
 
-    // The value should be tab-prefixed to prevent formula injection
-    expect(csv).toContain('\t=CMD|sh /c malicious');
-    // And it should NOT start with = (meaning it's properly escaped)
-    expect(csv.split('\n')[1].split(',')[0].startsWith('=')).toBe(false);
+    expect(csv).toContain(`"'=CMD|sh /c malicious"`);
+    expect(csv.split('\n')[1].startsWith('"=')).toBe(false);
   });
 
   it('escapes values starting with + to prevent formula injection', async () => {
@@ -80,7 +78,7 @@ describe('CSV export formula injection protection', () => {
     const response = await GET(request('http://localhost/api/reports/export?type=products'));
     const csv = await response.text();
 
-    expect(csv).toContain('\t+SUM(A1:A100)');
+    expect(csv).toContain(`"'+SUM(A1:A100)"`);
   });
 
   it('escapes values starting with - to prevent formula injection', async () => {
@@ -101,7 +99,7 @@ describe('CSV export formula injection protection', () => {
     const response = await GET(request('http://localhost/api/reports/export?type=customers'));
     const csv = await response.text();
 
-    expect(csv).toContain('\t-5000');
+    expect(csv).toContain(`"'-5000"`);
   });
 
   it('escapes values starting with @ to prevent formula injection', async () => {
@@ -120,6 +118,27 @@ describe('CSV export formula injection protection', () => {
     const response = await GET(request('http://localhost/api/reports/export?type=payments'));
     const csv = await response.text();
 
-    expect(csv).toContain('\t@import');
+    expect(csv).toContain(`"'@import"`);
+  });
+
+  it('neutralizes formulas following carriage returns and quotes record delimiters', async () => {
+    mocks.prisma.customer.findMany.mockResolvedValue([
+      {
+        name: '\r=1+1',
+        email: 'safe@example.com',
+        phone: '1234567890',
+        city: 'Test',
+        state: 'TS',
+        country: 'IN',
+        taxId: '',
+        currentBalance: new Prisma.Decimal('100.00'),
+        creditLimit: null,
+      },
+    ]);
+
+    const response = await GET(request('http://localhost/api/reports/export?type=customers'));
+    const csv = await response.text();
+
+    expect(csv).toContain(`"'\r=1+1"`);
   });
 });

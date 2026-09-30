@@ -851,8 +851,9 @@ export async function reversePayment(input: ReversePaymentInput) {
  * 2. Mark invoice REFUNDED
  * 3. Optionally restore inventory (RETURN movements)
  * 4. Reverse the original INVOICE sale journal exactly once (DR Revenue, CR AR)
- * 5. Update customer ledger so the cached balance reflects the refund
- * 6. Emit INVOICE_REFUND audit event
+ * 5. Reverse each unreversed payment journal and customer-ledger entry
+ * 6. Offset the invoice receivable in the customer ledger
+ * 7. Emit INVOICE_REFUND audit event
  */
 export async function refundInvoice(input: RefundInvoiceInput) {
   if (!input.reason || input.reason.trim() === '') {
@@ -864,6 +865,7 @@ export async function refundInvoice(input: RefundInvoiceInput) {
       where: { id: input.invoiceId },
       include: {
         items: true,
+        payments: true,
       },
     });
 
@@ -944,14 +946,57 @@ export async function refundInvoice(input: RefundInvoiceInput) {
       throw new AppError('Posted sale journal for this invoice was not found — cannot complete refund', 'NOT_FOUND');
     }
 
-    // If customer and invoice had payments, record ledger refund
-    if (invoice.customerId && invoice.paidAmount.greaterThan(0)) {
+    for (const payment of invoice.payments) {
+      if (payment.reversedAt) continue;
+
+      const paymentJournalReversal = await reverseSourceJournal(tx, {
+        businessId: input.businessId,
+        sourceType: 'PAYMENT',
+        sourceId: payment.id,
+        reversalSourceType: 'PAYMENT_REVERSAL',
+        reference: payment.reference || invoice.invoiceNumber,
+        description: `Payment reversal for Invoice #${invoice.invoiceNumber}: ${input.reason}`,
+        userId: input.userId,
+      });
+
+      if (!paymentJournalReversal) {
+        throw new AppError(
+          `Posted payment journal for payment ${payment.id} was not found — cannot complete refund`,
+          'NOT_FOUND'
+        );
+      }
+
+      if (invoice.customerId) {
+        await recordLedgerEntry(tx, {
+          businessId: input.businessId,
+          customerId: invoice.customerId,
+          invoiceId: invoice.id,
+          paymentId: payment.id,
+          entryType: 'DEBIT',
+          amount: payment.amount,
+          description: `Payment reversed for Invoice #${invoice.invoiceNumber}: ${input.reason}`,
+          reference: payment.reference || invoice.invoiceNumber,
+          userId: input.userId,
+        });
+      }
+
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          reversedAt: new Date(),
+          reversedById: input.userId,
+          reversalReason: input.reason,
+        },
+      });
+    }
+
+    if (invoice.customerId) {
       await recordLedgerEntry(tx, {
         businessId: input.businessId,
         customerId: invoice.customerId,
         invoiceId: invoice.id,
         entryType: 'REFUND',
-        amount: invoice.paidAmount,
+        amount: invoice.totalAmount,
         description: `Refund for Invoice #${invoice.invoiceNumber}: ${input.reason}`,
         reference: invoice.invoiceNumber,
         userId: input.userId,

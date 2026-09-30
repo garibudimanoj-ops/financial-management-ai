@@ -112,6 +112,28 @@ export async function requireAuth(): Promise<User> {
 }
 
 /**
+ * Resolves the authenticated user only when their verified email owns an invitation.
+ */
+export async function requireInvitationRecipient(invitationEmail: string): Promise<User> {
+  const supabase = await createClient();
+  const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
+
+  if (error || !supabaseUser) {
+    throw new AppError('Unauthorized: No active session', 'UNAUTHORIZED');
+  }
+
+  if (
+    !supabaseUser.email_confirmed_at ||
+    !supabaseUser.email ||
+    supabaseUser.email.trim().toLowerCase() !== invitationEmail.trim().toLowerCase()
+  ) {
+    throw new AppError('Invitation is not for this account', 'FORBIDDEN');
+  }
+
+  return await syncPrismaUser(supabaseUser);
+}
+
+/**
  * Resolves the business context for a requested business or active cookie selection.
  * If no businessId is requested, checks 'current_business_id' cookie, then defaults to first active membership.
  * Strictly verifies that the authenticated user has an ACTIVE membership in the target business.
