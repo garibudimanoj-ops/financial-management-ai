@@ -18,7 +18,7 @@ const chatRequestSchema = z.object({
   })).max(6).optional().default([]),
 });
 
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 function getGeminiClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -81,7 +81,7 @@ ${explanation}`;
     });
     return response.text?.trim() || 'I could not generate a response right now.';
   } catch (error) {
-    console.error('[CA Assistant] Gemini request failed', error instanceof Error ? error.name : 'unknown error');
+    console.error('[CA Assistant] Gemini request failed', { name: error instanceof Error ? error.name : 'unknown', status: typeof error === 'object' && error !== null && 'status' in error ? (error as { status?: number }).status : undefined, message: error instanceof Error ? error.message : String(error) });
     throw new AppError('The AI assistant is temporarily unavailable. Please try again.', 'INTERNAL_ERROR', 503);
   }
 }
